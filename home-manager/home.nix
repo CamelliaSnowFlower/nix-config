@@ -57,7 +57,8 @@
   home.packages = with pkgs; [
    tree
    neofetch
-   (discord.override { withVencord = true;})
+   vesktop
+   spotify
    ];
 
   # Enable home-manager and git
