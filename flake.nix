@@ -52,12 +52,20 @@
     # NixOS configuration entrypoint
     # Available through 'nixos-rebuild --flake .#your-hostname'
     nixosConfigurations = {
-      # FIXME replace with your hostname
+      # Saturn is the planet of discipline, structure, and responsibility.
       saturn = nixpkgs.lib.nixosSystem {
         specialArgs = {inherit inputs outputs;};
         modules = [
           # > Our main nixos configuration file <
-          ./nixos/configuration.nix
+          ./hosts/saturn/configuration.nix
+        ];
+      };
+      # Uranus is the planet of innovation, technology, and unexpected change.
+      uranus = nixpkgs.lib.nixosSystem {
+        specialArgs = {inherit inputs outputs;};
+        modules = [
+          # > Our main nixos configuration file <
+          ./hosts/uranus/configuration.nix
         ];
       };
     };
