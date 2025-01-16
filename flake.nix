@@ -84,7 +84,7 @@
         extraSpecialArgs = {inherit inputs outputs;};
         modules = [
           # > Our main home-manager configuration file <
-          ./home-manager/home.nix
+          ./home-manager/aquarius/default.nix
         ];
       };
     };
