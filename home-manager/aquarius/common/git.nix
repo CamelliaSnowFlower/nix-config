@@ -1,4 +1,4 @@
-{config, lib, ... }:
+{config, lib, pkgs, ... }:
 {
  programs.git = {
   enable = true;
@@ -9,4 +9,9 @@
    safe.directory = "/home/aquarius/Documents/nix-config";
   };
  };
+ # Home-manager Script
+ home.packages = with pkgs; [
+  (writeShellScriptBin  "hms" ''home-manager switch --flake .#aquarius@saturn'' )
+ ];
+ #TODO need to make more scripts for automating git and/or look into lazy git
 }
