@@ -57,6 +57,7 @@
   home.packages = with pkgs; [
    tree
    neofetch
+   vesktop
    ];
 
   # Enable home-manager and git
