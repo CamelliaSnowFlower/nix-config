@@ -46,7 +46,6 @@
     };
   };
 
-  # TODO: Set your username
   home = {
     username = "aquarius";
     homeDirectory = "/home/aquarius";
@@ -61,10 +60,8 @@
    spotify
    ];
 
-  # Enable home-manager and git
+  # Enable home-manager 
   programs.home-manager.enable = true;
-  #programs.git.enable = true;
-  # programs.gh.enable = true;
 
   # Nicely reload system units when changing configs
   systemd.user.startServices = "sd-switch";

@@ -12,12 +12,16 @@
     # Home manager
     home-manager.url = "github:nix-community/home-manager/release-24.11";
     home-manager.inputs.nixpkgs.follows = "nixpkgs";
+
+    # Nixos-harware 
+    nixos-hardware.url = "github:NixOS/nixos-hardware/master";
   };
 
   outputs = {
     self,
     nixpkgs,
     home-manager,
+    nixos-hardware,
     ...
   } @ inputs: let
     inherit (self) outputs;
@@ -66,6 +70,7 @@
         modules = [
           # > Our main nixos configuration file <
           ./hosts/uranus/configuration.nix
+          nixos-hardware.nixosModules.lenovo-thinkpad-t14
         ];
       };
     };
