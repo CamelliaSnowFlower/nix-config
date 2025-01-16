@@ -3,6 +3,11 @@
 - [X] Added home-manager package and pushed
 ## TODO 
 - [ ] Configure most used packages
+    - [X] git
+    - [ ] spotify
+    - [ ] vesktop
+    - [ ] firefox
+    - [ ] obsidian
 - [ ] Add Uranus host
 - [ ] Configure neovim configuration
 - [ ] configure shell
