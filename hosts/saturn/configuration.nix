@@ -74,6 +74,9 @@
     #media-session.enable = true;
   };
 
+  # Enable fingerprint services
+  services.fprintd.enable = true;
+
   # Enable touchpad support (enabled default in most desktopManager).
   # services.xserver.libinput.enable = true;
 
