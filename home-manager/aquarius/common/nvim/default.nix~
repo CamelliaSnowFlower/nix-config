@@ -1,11 +1,9 @@
-{config, inputs, lib, pkgs, ...}:
+{config, inputs, lib, pkgs, ... }:
 {
  imports = [
   inputs.nvf.homeManagerModules.default
  ];
  
- home.packages = with pkgs; [ 
- ];
 
  programs.nvf = {
   enable = true;

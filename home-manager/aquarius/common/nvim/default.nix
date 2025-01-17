@@ -13,7 +13,7 @@
     vimAlias = true;
     theme = {
      enable = true; 
-     name = "gruvbox";
+     name = "catppucin";
      style = "dark";
     };
    
