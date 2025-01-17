@@ -18,8 +18,7 @@
 
     # You can also split up your configuration and import pieces of it here:
     # ./nvim.nix
-    ./common/git.nix
-    ./common/ghostty.nix
+    ./common
   ];
 
   nixpkgs = {
