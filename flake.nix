@@ -15,13 +15,23 @@
 
     # Nixos-harware 
     nixos-hardware.url = "github:NixOS/nixos-hardware/master";
-  };
+    
+    # Neovim using nvf
+    nvf = {
+     url = "github:notashelf/nvf";
+     inputs.nixpkgs.follows = "nixpkgs-unstable";
+     # Optionally, you can also override indivdual plugins
+     # for example:
+     # inputs.obsdian-nvim.follows = "obsdian-nvim"; # <- this will use the obsdian-nvim from your inputs
+    };
+   };
 
   outputs = {
     self,
     nixpkgs,
     home-manager,
     nixos-hardware,
+    nvf,
     ...
   } @ inputs: let
     inherit (self) outputs;
@@ -78,7 +88,7 @@
     # Standalone home-manager configuration entrypoint
     # Available through 'home-manager --flake .#your-username@your-hostname'
     homeConfigurations = {
-      # FIXME replace with your username@hostname
+     # Saturn influences on Aquarius can bring about stabilty, success, and personal growth. 
       "aquarius@saturn" = home-manager.lib.homeManagerConfiguration {
         pkgs = nixpkgs.legacyPackages.x86_64-linux; # Home-manager requires 'pkgs' instance
         extraSpecialArgs = {inherit inputs outputs;};

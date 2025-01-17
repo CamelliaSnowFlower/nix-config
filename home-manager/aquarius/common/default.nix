@@ -4,5 +4,6 @@
   ./git.nix
   ./ghostty.nix
   ./scripts.nix
+  ./nvim
  ];
 }
