@@ -8,8 +8,8 @@
     - [ ] vesktop
     - [ ] firefox
     - [ ] obsidian
+    - [X] nvf
 - [ ] Add Uranus host
-- [ ] Configure neovim configuration
 - [ ] configure shell
-    - [ ] make scripts to automate home-manager on thinkpad
+    - [X] make scripts to automate home-manager on thinkpad
 - [ ] configure wayland 
