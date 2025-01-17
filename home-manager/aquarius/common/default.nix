@@ -1,9 +1,13 @@
-{pkgs, config, lib, ... }:
 {
- imports = [
-  ./git.nix
-  ./ghostty.nix
-  ./scripts.nix
-  ./nvim
- ];
+  pkgs,
+  config,
+  lib,
+  ...
+}: {
+  imports = [
+    ./git.nix
+    ./ghostty.nix
+    ./scripts.nix
+    ./nvim
+  ];
 }
