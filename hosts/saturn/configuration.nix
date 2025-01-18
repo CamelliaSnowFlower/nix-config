@@ -51,9 +51,8 @@
     enable = true;
     wayland = true;
   };
-  
-  services.xserver.desktopManager.gnome.enable = true;
 
+  services.xserver.desktopManager.gnome.enable = true;
 
   # Configure keymap in X11
   services.xserver.xkb = {
@@ -104,13 +103,12 @@
   # Enable Flakes
   nix.settings.experimental-features = ["nix-command" "flakes"];
 
-  # enable Hyperland: 
+  # enable Hyperland:
   programs.hyprland = {
     enable = true;
     withUWSM = true;
     xwayland.enable = true;
   };
-  
 
   # List packages installed in system profile. To search, run:
   # $ nix search wget
