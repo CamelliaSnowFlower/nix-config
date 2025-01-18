@@ -1,5 +1,6 @@
 {config, pkgs, ... }: {
- wayland.windowManager.hyperland = {
+  programs.kitty.enable = true;
+  wayland.windowManager.hyperland = {
     enable = true;
     settings = {
 
