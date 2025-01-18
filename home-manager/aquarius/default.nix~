@@ -60,7 +60,6 @@
     vesktop
     spotify
     nix-output-monitor
-    grim
   ];
 
   # Enable home-manager
