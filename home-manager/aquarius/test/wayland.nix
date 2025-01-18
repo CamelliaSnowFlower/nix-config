@@ -26,6 +26,7 @@
         "[workspace 1 silent] $terminal"
         "[workspace 2 silent] firefox"
         "[workspace 2 silent] obsidian"
+        "waybar"
       ];
 
       general = {

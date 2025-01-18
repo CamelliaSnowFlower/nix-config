@@ -2,7 +2,6 @@
 
   home.packages = with pkgs; [
     gtkmm3
-    font-awesome_5
   ];
 
   programs.waybar = {
