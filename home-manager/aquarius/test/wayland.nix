@@ -15,11 +15,17 @@
       "$fileManager" = "yazi"; #TODO fix yazi not working
       "$menu" = "wofi --show drun";
       "$mainMod" = "SUPER"; # Sets "Windows" key as main modifier
-      monitor = ",1920x1080p@60,auto,1";
+      monitor = "eDP-1,1920x1080p@60.01,auto,1";
 
       env = [
         "XCURSOR_SIZE,24"
         "HYPRCURSOR_SIZE,24"
+      ];
+
+      exec-once = [
+        "[workspace 1 silent] $terminal"
+        "[workspace 2 silent] firefox"
+        "[workspace 2 silent] obsidian"
       ];
 
       general = {

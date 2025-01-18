@@ -20,6 +20,7 @@
     # ./nvim.nix
     ./common
     ./test/wayland.nix
+    ./test/waybar.nix
   ];
 
   nixpkgs = {
