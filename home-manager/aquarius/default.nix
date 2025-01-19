@@ -62,6 +62,7 @@
     spotify
     nix-output-monitor
     grim
+    asciiquarium
   ];
 
   # Enable home-manager

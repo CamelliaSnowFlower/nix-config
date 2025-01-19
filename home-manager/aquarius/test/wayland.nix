@@ -132,6 +132,7 @@
         "$mainMod, P, pseudo, # dwindle"
         "$mainMod, J, togglesplit, # dwindle"
         "$mainMod, F, exec, firefox"
+        "$mainMod, D, exec, vesktop"
         "$mainMod, left, movefocus, l"
         "$mainMod, right, movefocus, r"
         "$mainMod, up, movefocus, u"
