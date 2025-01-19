@@ -9,6 +9,5 @@
     ./ghostty.nix
     ./scripts.nix
     ./nvim
-    ./packages.nix
   ];
 }

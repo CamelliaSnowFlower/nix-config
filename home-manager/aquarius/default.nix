@@ -55,15 +55,6 @@
 
   # Add stuff for your user as you see fit:
   # programs.neovim.enable = true;
-  home.packages = with pkgs; [
-    tree
-    neofetch
-    vesktop
-    spotify
-    nix-output-monitor
-    grim
-    asciiquarium
-  ];
 
   # Enable home-manager
   programs.home-manager.enable = true;
