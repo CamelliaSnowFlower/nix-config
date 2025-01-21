@@ -29,8 +29,8 @@
             col = 10;
             height = 20;
             relative = "win";
-            row = 10;
-            width = 20;
+            row = 20;
+            width = 40;
           };
         };
         preserve_window_proportions = false;
