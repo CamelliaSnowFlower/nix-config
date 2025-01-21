@@ -26,10 +26,10 @@
           enable = true;
           open_win_config = {
             border = "rounded";
-            col = 10;
-            height = 20;
+            col = 20;
+            height = 40;
             relative = "win";
-            row = 20;
+            row = 10;
             width = 40;
           };
         };
