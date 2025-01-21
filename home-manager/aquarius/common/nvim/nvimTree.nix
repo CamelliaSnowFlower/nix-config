@@ -1,6 +1,6 @@
 {config, ...}: {
   
-  programs.nvf.vim.filetree.nvimTree = {
+  programs.nvf.settings.vim.filetree.nvimTree = {
     enable = true;
     setupOpts = {
       actions ={

@@ -3,8 +3,12 @@
   programs.nvf.vim.filetree.nvimTree = {
     enable = true;
     setupOpts = {
-      actions ={};
-      diagnostics = {};
+      actions ={
+        open_file.quit_on_open = true;
+      };
+      diagnostics = {
+        enable = true;
+      };
       filters = {
         dotfiles = true;
         exclude = [];
