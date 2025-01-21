@@ -26,10 +26,10 @@
           enable = true;
           open_win_config = {
             border = "rounded";
-            col = 30;
+            col = -0.5;
             height = 20;
-            relative = "win";
-            row = 10;
+            relative = "editor";
+            row = -0.5;
             width = 40;
           };
         };
