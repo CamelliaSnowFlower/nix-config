@@ -1,5 +1,9 @@
-{config, lib, pkgs, ... }: {
-  
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}: {
   home.packages = with pkgs; [
     tree
     neofetch
@@ -8,8 +12,8 @@
     nix-output-monitor
     grim
     asciiquarium
-    astrolog
     cmatrix
-    bb
+    xorg.xev
+    pomodoro
   ];
 }

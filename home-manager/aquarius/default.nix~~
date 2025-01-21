@@ -19,6 +19,8 @@
     # You can also split up your configuration and import pieces of it here:
     # ./nvim.nix
     ./common
+    ./test/wayland.nix
+    ./test/waybar.nix
   ];
 
   nixpkgs = {
