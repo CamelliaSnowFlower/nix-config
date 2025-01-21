@@ -24,7 +24,6 @@
         statusline.lualine.enable = true;
         telescope.enable = true;
         autocomplete.nvim-cmp.enable = true;
-        filetree.neo-tree.enable = true;
         tabline.nvimBufferline.enable = true;
 
         binds = {

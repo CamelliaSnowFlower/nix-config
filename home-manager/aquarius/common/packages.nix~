@@ -14,5 +14,6 @@
     asciiquarium
     cmatrix
     xorg.xev
+    pomodoro
   ];
 }

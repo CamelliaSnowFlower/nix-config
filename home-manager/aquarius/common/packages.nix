@@ -15,5 +15,6 @@
     cmatrix
     xorg.xev
     pomodoro
+    gparted
   ];
 }
