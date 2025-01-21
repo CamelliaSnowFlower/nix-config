@@ -9,6 +9,8 @@
   imports = [
     # Include the results of the hardware scan.
     ./hardware-configuration.nix
+    ./nvidia.nix
+    ./steam.nix
   ];
 
   # Bootloader.
@@ -85,6 +87,14 @@
 
   # Define a user account. Don't forget to set a password with ‘passwd’.
   users.users.aquarius = {
+    isNormalUser = true;
+    description = "AJ";
+    extraGroups = ["networkmanager" "wheel"];
+    packages = with pkgs; [
+    ];
+  };
+
+  users.users.camelliasnowflower = {
     isNormalUser = true;
     description = "AJ";
     extraGroups = ["networkmanager" "wheel"];

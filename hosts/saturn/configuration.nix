@@ -79,14 +79,19 @@
     #media-session.enable = true;
   };
 
-  # Enable fingerprint services
+  # Enable fingerprin services
   services.fprintd.enable = true;
-
-  # Enable touchpad support (enabled default in most desktopManager).
-  # services.xserver.libinput.enable = true;
 
   # Define a user account. Don't forget to set a password with ‘passwd’.
   users.users.aquarius = {
+    isNormalUser = true;
+    description = "AJ";
+    extraGroups = ["networkmanager" "wheel"];
+    packages = with pkgs; [
+    ];
+  };
+
+  users.users.camelliasnowflower = {
     isNormalUser = true;
     description = "AJ";
     extraGroups = ["networkmanager" "wheel"];
