@@ -16,6 +16,5 @@
     xorg.xev
     pomodoro
     gparted
-    lazygit
   ];
 }
