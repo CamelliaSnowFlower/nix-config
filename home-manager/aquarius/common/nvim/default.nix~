@@ -7,6 +7,7 @@
 }: {
   imports = [
     inputs.nvf.homeManagerModules.default
+    ./nvimTree.nix
   ];
 
   programs.nvf = {
