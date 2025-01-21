@@ -27,9 +27,9 @@
           open_win_config = {
             border = "rounded";
             col = 20;
-            height = 40;
+            height = 20;
             relative = "win";
-            row = 10;
+            row = 20;
             width = 40;
           };
         };
