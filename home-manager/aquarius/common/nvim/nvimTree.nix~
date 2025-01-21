@@ -28,6 +28,11 @@
         };
         preserve_window_proportions = false;
         relativenumber = true;
+        width = {
+          min = 30;
+          max = -1;
+          padding = 1;
+        };
       };
     };
   };
