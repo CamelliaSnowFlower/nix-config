@@ -22,17 +22,6 @@
         enable = true;
       };
       view = {
-        float = {
-          enable = true;
-          open_win_config = {
-            border = "rounded";
-            col = 1;
-            height = 20;
-            relative = "editor";
-            row = 1;
-            width = 40;
-          };
-        };
         preserve_window_proportions = false;
         relativenumber = true;
         signcolumn = "no";
