@@ -24,7 +24,22 @@
       view = {
         float = {
           enable = true;
-          # open_win_config ={};
+          open_win_config = {
+            border = "rounded";
+            col = 1;
+            hieght = {
+              min = 50;
+              max = -1;
+              padding = 1;
+            };
+            relative = "editor";
+            row = 1;
+            width = {
+              min = 30;
+              max = -1;
+              padding = 1;
+            };
+          };
         };
         preserve_window_proportions = false;
         relativenumber = true;
