@@ -26,11 +26,11 @@
           enable = true;
           open_win_config = {
             border = "rounded";
-            col = 3;
-            height = 3;
+            col = 10;
+            height = 20;
             relative = "win";
-            row = 3;
-            width = 12;
+            row = 10;
+            width = 20;
           };
         };
         preserve_window_proportions = false;
