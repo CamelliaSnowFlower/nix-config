@@ -23,7 +23,7 @@
         relativenumber = true;
         signcolumn = "no";
         width = {
-          min = 30;
+          min = 20;
           max = -1;
           padding = 1;
         };
