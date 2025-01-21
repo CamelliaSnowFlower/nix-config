@@ -28,6 +28,7 @@
         };
         preserve_window_proportions = false;
         relativenumber = true;
+        signcolumn = "auto";
         width = {
           min = 30;
           max = -1;
