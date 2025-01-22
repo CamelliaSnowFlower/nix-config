@@ -1,7 +1,12 @@
-{config, pkgs, lib, ...}: {
+{
+  config,
+  pkgs,
+  lib,
+  ...
+}: {
   imports = [
-  ./waybar.nix
-  ./hyprlock.nix
-  ./hyprland.nix
+    ./waybar.nix
+    ./hyprlock.nix
+    ./hyprland.nix
   ];
 }

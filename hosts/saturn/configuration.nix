@@ -115,7 +115,7 @@
     xwayland.enable = true;
   };
 
-  # enable hyplock security 
+  # enable hyplock security
   security.pam.services.hyplock = {};
 
   # List packages installed in system profile. To search, run:

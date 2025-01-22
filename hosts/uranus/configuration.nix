@@ -87,7 +87,6 @@
   # Enable fingerprint services
   services.fprintd.enable = true;
 
-
   # Define a user account. Don't forget to set a password with ‘passwd’.
   users.users.aquarius = {
     isNormalUser = true;
@@ -121,7 +120,7 @@
     xwayland.enable = true;
   };
 
-  # enable hyplock security 
+  # enable hyplock security
   security.pam.services.hyplock = {};
 
   # List packages installed in system profile. To search, run:

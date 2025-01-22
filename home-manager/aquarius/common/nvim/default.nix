@@ -23,11 +23,11 @@
         };
 
         mini.icons.enable = true;
-        mini.comment.enable =true;
+        mini.comment.enable = true;
+        mini.tabline.enable = true;
         statusline.lualine.enable = true;
         telescope.enable = true;
         autocomplete.nvim-cmp.enable = true;
-        tabline.nvimBufferline.enable = true;
 
         binds = {
           whichKey.enable = true;
