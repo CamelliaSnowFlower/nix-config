@@ -47,6 +47,7 @@
 
         telescope.enable = true;
         tabline.nvimBufferline.enable = true;
+        autocomplete.nvim-cmp.enable = true;
 
         binds = {
           whichKey.enable = true;
