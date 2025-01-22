@@ -16,5 +16,6 @@
     pomodoro
     gparted
     lazygit
+    usbimager
   ];
 }
