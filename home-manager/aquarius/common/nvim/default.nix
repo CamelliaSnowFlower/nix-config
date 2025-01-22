@@ -22,12 +22,19 @@
           style = "dark";
         };
 
-        mini.icons.enable = true;
+        # mini text editing
+        mini.ai.enable = true;
         mini.comment.enable = true;
-        mini.tabline.enable = true;
+        mini.completion.enable = true;
+        mini.operators.enable = true;
+        mini.surround.enable =true;
+        #mini general workflow
+        mini.basics.enable = true;
+        mini.bracketed.enable = true; 
+        #mini appearance
+        mini.icons.enable = true;
         statusline.lualine.enable = true;
         telescope.enable = true;
-        autocomplete.nvim-cmp.enable = true;
 
         binds = {
           whichKey.enable = true;
