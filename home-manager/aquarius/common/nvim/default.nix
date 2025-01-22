@@ -32,8 +32,10 @@
         mini.basics.enable = true;
         mini.bracketed.enable = true; 
         #mini appearance
+        mini.animate.enable = true;
         mini.icons.enable = true;
-        statusline.lualine.enable = true;
+        mini.starter.enable = true;
+        mini.statusline.enable = true;
         telescope.enable = true;
 
         binds = {
