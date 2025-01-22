@@ -38,6 +38,10 @@
         mini.tabline.enable = true;
         mini.starter.enable = true;
 
+        mini.starter.setupOpts = {
+          header = "Hello World!";
+        };
+
         telescope.enable = true;
         tabline.nvimBufferline.enable = true;
 
