@@ -8,7 +8,7 @@
     # This is your home-manager configuration file
     ./nvim
     ./desktop
-    ./photography
+    # ./photography
     ./git.nix
     ./ghostty.nix
     ./scripts.nix
