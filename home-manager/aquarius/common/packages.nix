@@ -10,7 +10,6 @@
     vesktop
     spotify
     nix-output-monitor
-    grim
     asciiquarium
     cmatrix
     xorg.xev
