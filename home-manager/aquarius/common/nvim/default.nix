@@ -36,6 +36,7 @@
         mini.icons.enable = true;
         mini.starter.enable = true;
         mini.statusline.enable = true;
+        mini.tabline.enable = true;
         telescope.enable = true;
 
         binds = {
