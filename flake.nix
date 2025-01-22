@@ -72,6 +72,7 @@
         modules = [
           # > Our main nixos configuration file <
           ./hosts/saturn/configuration.nix
+          nixos-hardware.nixosModules.lenovo-thinkpad-t14
         ];
       };
       # Uranus is the planet of innovation, technology, and unexpected change.
@@ -80,7 +81,6 @@
         modules = [
           # > Our main nixos configuration file <
           ./hosts/uranus/configuration.nix
-          nixos-hardware.nixosModules.lenovo-thinkpad-t14
         ];
       };
     };
@@ -90,6 +90,14 @@
     homeConfigurations = {
       # Saturn influences on Aquarius can bring about stabilty, success, and personal growth.
       "aquarius@saturn" = home-manager.lib.homeManagerConfiguration {
+        pkgs = nixpkgs.legacyPackages.x86_64-linux; # Home-manager requires 'pkgs' instance
+        extraSpecialArgs = {inherit inputs outputs;};
+        modules = [
+          # > Our main home-manager configuration file <
+          ./home-manager/aquarius/default.nix
+        ];
+      };
+      "aquarius@uranus" = home-manager.lib.homeManagerConfiguration {
         pkgs = nixpkgs.legacyPackages.x86_64-linux; # Home-manager requires 'pkgs' instance
         extraSpecialArgs = {inherit inputs outputs;};
         modules = [
