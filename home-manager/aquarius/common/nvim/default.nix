@@ -41,9 +41,7 @@
         mini.starter.setupOpts = {
           header = "Hello World!";
           footer = lib.generators.mkLuaInline ''
-                function()
-                  print('Hello Footer!')
-                end
+                os.date()
                 '';
         };
 
