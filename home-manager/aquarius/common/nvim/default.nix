@@ -39,6 +39,12 @@
         mini.starter.enable = true;
 
         mini.starter.setupOpts = {
+          header = "Hello World!";
+          footer = lib.generators.mkLuaInline ''
+                function()
+                  print('Hello Footer!')
+                end
+                '';
         };
 
         telescope.enable = true;
