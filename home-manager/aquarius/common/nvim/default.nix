@@ -39,7 +39,7 @@
         mini.starter.enable = true;
 
         mini.starter.setupOpts = {
-          header = "Hello World!";
+          header = "Lets Code AJ";
           footer = lib.generators.mkLuaInline ''
                 os.date()
                 '';
