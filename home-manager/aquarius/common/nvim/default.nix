@@ -40,7 +40,7 @@
 
         mini.starter.setupOpts = {
           header = "Hello World!";
-          footer = os.date();
+          footer = "os.date()";
         };
 
         telescope.enable = true;
