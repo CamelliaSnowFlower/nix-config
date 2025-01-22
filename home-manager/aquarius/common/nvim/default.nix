@@ -37,7 +37,9 @@
         mini.starter.enable = true;
         mini.statusline.enable = true;
         mini.tabline.enable = true;
+
         telescope.enable = true;
+        tabline.nvimBufferline.enable = true;
 
         binds = {
           whichKey.enable = true;
