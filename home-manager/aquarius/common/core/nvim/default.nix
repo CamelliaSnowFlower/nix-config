@@ -64,6 +64,8 @@
           astro.enable = true;
           python.enable = true;
 
+        };
+
           images.image-nvim.enable = true;
           presence.neocord.enable = true;
           terminal = {
@@ -72,7 +74,6 @@
               lazygit.enable = true;
             };
           };
-        };
       };
     };
   };
