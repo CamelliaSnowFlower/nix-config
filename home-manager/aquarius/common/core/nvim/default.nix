@@ -22,6 +22,7 @@
           style = "dark";
         };
 
+        spellcheck = true;
         # mini text editing
         mini.ai.enable = true;
         mini.comment.enable = true;
@@ -32,7 +33,6 @@
         mini.basics.enable = true;
         mini.bracketed.enable = true; 
         #mini appearance
-        mini.animate.enable = true;
         mini.icons.enable = true;
         mini.statusline.enable = true;
         mini.tabline.enable = true;
@@ -63,6 +63,15 @@
           markdown.enable = true;
           astro.enable = true;
           python.enable = true;
+
+          images.image-nvim.enable = true;
+          presence.neocord.enable = true;
+          terminal = {
+            toggleterm = {
+              enable = true;
+              lazygit.enable = true;
+            };
+          };
         };
       };
     };
