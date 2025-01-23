@@ -28,10 +28,10 @@
         mini.comment.enable = true;
         mini.completion.enable = true;
         mini.operators.enable = true;
-        mini.surround.enable =true;
+        mini.surround.enable = true;
         #mini general workflow
         mini.basics.enable = true;
-        mini.bracketed.enable = true; 
+        mini.bracketed.enable = true;
         #mini appearance
         mini.icons.enable = true;
         mini.statusline.enable = true;
@@ -41,8 +41,8 @@
         mini.starter.setupOpts = {
           header = "Lets Code AJ";
           footer = lib.generators.mkLuaInline ''
-                os.date()
-                '';
+            os.date()
+          '';
         };
 
         telescope.enable = true;
@@ -63,16 +63,15 @@
           markdown.enable = true;
           astro.enable = true;
           python.enable = true;
-
         };
 
-          presence.neocord.enable = true;
-          terminal = {
-            toggleterm = {
-              enable = true;
-              lazygit.enable = true;
-            };
+        presence.neocord.enable = true;
+        terminal = {
+          toggleterm = {
+            enable = true;
+            lazygit.enable = true;
           };
+        };
       };
     };
   };
