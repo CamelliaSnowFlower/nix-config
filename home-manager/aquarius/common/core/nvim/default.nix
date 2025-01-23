@@ -23,6 +23,7 @@
         };
 
         spellcheck.enable = true;
+        spellcheck.extraSpellWords = {"en.utf-8"= ["Astro"];};
         # mini text editing
         mini.ai.enable = true;
         mini.comment.enable = true;
