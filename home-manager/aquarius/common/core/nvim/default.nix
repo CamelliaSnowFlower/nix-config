@@ -66,7 +66,6 @@
 
         };
 
-          utility.images.image-nvim.enable = true;
           presence.neocord.enable = true;
           terminal = {
             toggleterm = {
