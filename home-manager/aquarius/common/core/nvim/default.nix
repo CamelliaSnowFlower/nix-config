@@ -22,7 +22,7 @@
           style = "dark";
         };
 
-        spellcheck = true;
+        spellcheck.enable = true;
         # mini text editing
         mini.ai.enable = true;
         mini.comment.enable = true;
