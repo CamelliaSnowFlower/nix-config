@@ -18,5 +18,6 @@
     lazygit
     usbimager
     newsboat
+    lynx
   ];
 }
