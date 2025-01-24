@@ -19,5 +19,6 @@
     usbimager
     newsboat
     lynx
+    btop
   ];
 }
