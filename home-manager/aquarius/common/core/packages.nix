@@ -17,5 +17,6 @@
     gparted
     lazygit
     usbimager
+    newsboat
   ];
 }
