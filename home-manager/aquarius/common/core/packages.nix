@@ -20,6 +20,5 @@
     newsboat
     lynx
     btop
-    ollama
   ];
 }
