@@ -1,6 +1,6 @@
 {pkgs, ... }: {
 
-    home.packages = with pkgs.ustable; [
+    home.packages = with pkgs.unstable; [
       ollma
     ];
   }
