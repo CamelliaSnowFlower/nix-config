@@ -1,15 +1,6 @@
-{config, pkgs, lib, ... }: 
+{pkgs, ... }: {
 
-  let
-
-  unstable = import inputs.nixpkgs-unstable {
-    system = pkgs.system;
-  };
- 
-  in
-
-  {
-    home.packages = with pkgs; [
+    home.packages = with pkgs.ustable; [
       ollma
     ];
   }
