@@ -17,5 +17,8 @@
     gparted
     lazygit
     usbimager
+    newsboat
+    lynx
+    btop
   ];
 }
