@@ -1,8 +1,8 @@
-{pkgs, ... }: {
+{config, pkgs, ... }: {
 
-    home.packages = with pkgs.unstable; [
-      ollama
-      # llama-cpp
-    ];
-  }
-
+services.ollama = {
+  enable = true;
+  package = pkgs.unstable.ollama;
+  acceleration = "cuda";
+};
+}
