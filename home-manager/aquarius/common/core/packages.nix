@@ -21,6 +21,5 @@
     lynx
     btop
     foliate
-    epy
   ];
 }
