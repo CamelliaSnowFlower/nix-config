@@ -20,7 +20,7 @@
     newsboat
     lynx
     btop
-    calibre
     foliate
+    piper-tts
   ];
 }
