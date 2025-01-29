@@ -20,5 +20,6 @@
     newsboat
     lynx
     btop
+    bookworm-unstable
   ];
 }
