@@ -20,6 +20,7 @@
     newsboat
     lynx
     btop
-    bookworm
+    calibre
+    foliate
   ];
 }
