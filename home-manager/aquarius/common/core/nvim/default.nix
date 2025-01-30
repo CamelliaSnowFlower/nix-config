@@ -64,6 +64,10 @@
           markdown.enable = true;
           astro.enable = true;
           python.enable = true;
+          rust = {
+            enable = true;
+            crates.enable = true;
+            };
         };
 
         presence.neocord.enable = true;
