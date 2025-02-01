@@ -5,6 +5,7 @@
   ...
 }: {
   home.packages = with pkgs.unstable; [
-    nix-search-tv 
+    factrio
+    nix-search
   ];
 }
