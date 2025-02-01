@@ -4,7 +4,7 @@
   pkgs,
   ...
 }: {
-  home.packages = with pkgs.untable; [
+  home.packages = with pkgs.unstable; [
      nix-search-tv
   ];
 }
