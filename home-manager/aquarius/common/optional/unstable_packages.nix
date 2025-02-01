@@ -5,7 +5,7 @@
   ...
 }: {
   home.packages = with pkgs.unstable; [
-    factrio
+    factorio
     nix-search
   ];
 }
