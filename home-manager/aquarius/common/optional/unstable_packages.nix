@@ -5,6 +5,6 @@
   ...
 }: {
   home.packages = with pkgs.unstable; [
-     nix-search-tv
+    nix-search-tv 
   ];
 }
