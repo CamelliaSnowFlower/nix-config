@@ -22,5 +22,6 @@
     btop
     foliate
     ttyper
+    sptlrx
   ];
 }
