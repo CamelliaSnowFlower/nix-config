@@ -9,7 +9,7 @@
     (writeShellScriptBin "hms" ''home-manager switch --flake .#$USER@$HOSTNAME |& nom'')
     (writeShellScriptBin "hmsb" ''home-manager switch -b backup --flake .#$USER@$HOSTNAME |& nom'')
   ];
-  home.shellAliases = {
+  programs.bash.shellAliases = {
     lg = "lazygit";
     hh = "cd ~/Documents/nix-config/";
   };
