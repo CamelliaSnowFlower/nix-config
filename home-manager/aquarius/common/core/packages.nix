@@ -21,6 +21,6 @@
     lynx
     btop
     foliate
-    imagemagick
+    imagemagickBig
   ];
 }
