@@ -22,5 +22,6 @@
     btop
     foliate
     imagemagickBig
+    gale
   ];
 }
