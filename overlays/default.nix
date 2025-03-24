@@ -6,17 +6,21 @@
   # This one contains whatever you want to overlay
   # You can change versions, add patches, set compilation flags, anything really.
   # https://nixos.wiki/wiki/Overlays
-  modifications = final: prev: {
-    # example = prev.example.overrideAttrs (oldAttrs: rec {
-    gale = prev.gale.overrideAttrs (new: old: {
+  modifications = final: prev: let
+        version = "1.4.2";
+        hash = "sha256-xe0qlbtt06CUK8bXyaGDtCcHOXpSnkbuvcxaDJjeS/c=";
+        npmHash = "sha256-/+NhlQydGS6+2jEjpbwycwKplVo/++wcdPiBNY3R3FI=";
+        cargoHash = "sha256-VwzGbm34t7mg9ndmTkht6Ho32NQ+6uxuPTKi3+VrhYo=";
+      in {
+        gale = prev.gale.overrideAttrs (new: old: {
           src = prev.fetchFromGitHub {
-            inherit "1.4.2" "sha256-xe0qlbtt06CUK8bXyaGDtCcHOXpSnkbuvcxaDJjeS/c=";
+            inherit version hash;
             owner = "Kesomannen";
             repo = "gale";
             rev = "1.4.2";
           };
           npmDeps = prev.fetchNpmDeps {
-            hash = "sha256-/+NhlQydGS6+2jEjpbwycwKplVo/++wcdPiBNY3R3FI=";
+            hash = npmHash;
             name = "${new.pname}-${new.version}-npm-deps";
             inherit (new) src;
           };
@@ -28,11 +32,10 @@
               src
               cargoRoot
               ;
-            hash = "sha256-VwzGbm34t7mg9ndmTkht6Ho32NQ+6uxuPTKi3+VrhYo=";# ...
-        };
-                });
-    # });
-  };
+            hash = cargoHash;
+          };
+        });
+      };
 
   # When applied, the unstable nixpkgs set (declared in the flake inputs) will
   # be accessible through 'pkgs.unstable'
