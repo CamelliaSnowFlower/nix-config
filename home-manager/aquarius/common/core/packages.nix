@@ -23,6 +23,5 @@
     foliate
     imagemagickBig
     r2modman
-    gale
   ];
 }
