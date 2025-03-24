@@ -22,6 +22,5 @@
     btop
     foliate
     imagemagickBig
-    r2modman
   ];
 }
