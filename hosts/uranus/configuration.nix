@@ -110,15 +110,14 @@
   # Enable Flakes
   nix.settings.experimental-features = ["nix-command" "flakes"];
 
-  # enable Hyperland:
+  # enable Hyprland:
   programs.hyprland = {
     enable = true;
     withUWSM = true;
-    xwayland.enable = true;
   };
 
   # enable hyplock security
-  security.pam.services.hyplock = {};
+  # security.pam.services.hyplock = {};
 
   # List packages installed in system profile. To search, run:
   # $ nix search wget
