@@ -24,5 +24,6 @@
     imagemagickBig
     prismlauncher
     zulu17
+    chromium
   ];
 }
