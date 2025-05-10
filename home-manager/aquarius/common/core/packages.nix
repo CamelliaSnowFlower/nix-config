@@ -23,5 +23,6 @@
     foliate
     imagemagickBig
     prismlauncher
+    zulu-ca-jdk
   ];
 }
