@@ -7,7 +7,6 @@
   home.packages = with pkgs; [
     tree
     neofetch
-    vesktop
     spotify
     nix-output-monitor
     asciiquarium
