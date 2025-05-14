@@ -24,5 +24,6 @@
     prismlauncher
     zulu17
     chromium
+    legcord
   ];
 }
