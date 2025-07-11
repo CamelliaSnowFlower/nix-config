@@ -62,7 +62,7 @@
 
           nix.enable = true;
           markdown.enable = true;
-          astro.enable = true;
+          # astro.enable = true;
           python.enable = true;
           rust = {
             enable = true;
