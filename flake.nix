@@ -26,7 +26,7 @@
     };
     
     # Stylix for simple ricing
-    stylix.url = "github:danth/stylix";
+    stylix.url = "github:nix-community/stylix";
     stylix.inputs.nixpkgs.follows = "nixpkgs";
   };
 
