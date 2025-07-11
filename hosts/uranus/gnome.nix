@@ -5,7 +5,7 @@ pkgs,
 }: {
 
   environment.systemPackages = with pkgs; [
-        gnomeExtenstions.blur-my-shell
+        gnomeExtensions.blur-my-shell
         ];
 }
 
