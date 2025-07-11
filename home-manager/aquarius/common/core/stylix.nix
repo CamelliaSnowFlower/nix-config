@@ -6,7 +6,7 @@
   ...
 }: {
   imports = [
-    inputs.stylix.homeManagerModules.stylix
+    inputs.stylix.homeModules.stylix
   ];
         #  progams.stylix.base16scheme = {
         #base00 = “282828”;
