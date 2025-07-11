@@ -25,6 +25,5 @@
     zulu17
     chromium
     legcord
-    ashell
   ];
 }
