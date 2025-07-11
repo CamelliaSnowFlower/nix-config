@@ -26,6 +26,6 @@
         #base0E = “d3869b”;
         #    base0F = “d65d0e”;
         # };
-  programs.stylix.image = ./wallpaper.png;
+  stylix.image = ./wallpaper.png;
 }
 
