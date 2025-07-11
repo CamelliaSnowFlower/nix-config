@@ -8,7 +8,7 @@
   imports = [
     inputs.stylix.homeModules.stylix
   ];
-          progams.stylix.base16scheme = {
+          stylix.base16scheme = {
         base00 = “282828”;
         base01 = “3c3836”;
         base02 = “504945”;
