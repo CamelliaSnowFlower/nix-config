@@ -11,7 +11,6 @@
     ./hardware-configuration.nix
     ./nvidia.nix
     ./steam.nix
-    ./gnome.nix
   ];
 
   # Bootloader.

@@ -24,6 +24,10 @@
       # for example:
       # inputs.obsdian-nvim.follows = "obsdian-nvim"; # <- this will use the obsdian-nvim from your inputs
     };
+    
+    # Stylix for simple ricing
+    stylix.url = "github:danth/stylix";
+    stylix.inputs.nixpkgs.follows = "nixpkgs";
   };
 
   outputs = {
