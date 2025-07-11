@@ -36,6 +36,7 @@
     home-manager,
     nixos-hardware,
     nvf,
+    sytlix,
     ...
   } @ inputs: let
     inherit (self) outputs;
