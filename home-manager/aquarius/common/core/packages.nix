@@ -25,7 +25,7 @@
     zulu17
     chromium
     legcord
-    cura-appimage
+    orca-slicer
     blender
   ];
 }
