@@ -25,5 +25,7 @@
     zulu17
     chromium
     legcord
+    cura-appimage
+    blender
   ];
 }
