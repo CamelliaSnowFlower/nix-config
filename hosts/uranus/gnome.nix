@@ -1,11 +1,9 @@
-{ 
-config,
-pkgs,
-...
+{
+  config,
+  pkgs,
+  ...
 }: {
-
   environment.systemPackages = with pkgs; [
-        gnomeExtensions.blur-my-shell
-        ];
+    gnomeExtensions.blur-my-shell
+  ];
 }
-
