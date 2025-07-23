@@ -28,5 +28,6 @@
     orca-slicer
     freecad
     blender
+    pypy3
   ];
 }
