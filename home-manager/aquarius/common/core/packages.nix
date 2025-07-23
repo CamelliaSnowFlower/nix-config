@@ -30,5 +30,6 @@
     blender
     pypy3
     fd
+    gale
   ];
 }
