@@ -31,6 +31,6 @@
     pypy3
     fd
     gale
-    webkit
+    haskellPackages.webkit
   ];
 }
