@@ -31,5 +31,6 @@
     pypy3
     fd
     gale
+    webkit
   ];
 }
