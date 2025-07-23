@@ -29,5 +29,6 @@
     freecad
     blender
     pypy3
+    fd
   ];
 }
