@@ -31,6 +31,6 @@
     pypy3
     fd
     gale
-    haskellPackages.webkit
+    r2modman
   ];
 }
