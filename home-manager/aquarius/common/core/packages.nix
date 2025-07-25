@@ -35,5 +35,6 @@
     spotify-cli-linux
     pokemonsay
     artem
+    ascii-image-converter
   ];
 }
