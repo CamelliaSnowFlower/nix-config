@@ -10,5 +10,6 @@
     (writeShellScriptBin "hmsb" ''home-manager switch -b backup --flake .#$USER@$HOSTNAME |& nom'')
     (writeShellScriptBin "hh" ''cd /home/aquarius/Documents/nix-config/'')
     (writeShellScriptBin "skip" ''spotifycli --next && spotifycli --song && spotifycli --artist'')
+    (writeShellScriptBin "rw" ''spotifycli --prev && spotifycli --song && spotifycli --artist'')
   ];
 }
