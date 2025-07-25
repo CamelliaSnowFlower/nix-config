@@ -36,5 +36,6 @@
     pokemonsay
     artem
     ascii-image-converter
+    ani-cli
   ];
 }
