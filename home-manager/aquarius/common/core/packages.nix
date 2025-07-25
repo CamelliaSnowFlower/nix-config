@@ -37,6 +37,6 @@
     artem
     ascii-image-converter
     ani-cli
-    tldr
+    speedtest-cli
   ];
 }
