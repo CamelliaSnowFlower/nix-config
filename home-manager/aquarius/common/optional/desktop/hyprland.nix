@@ -14,7 +14,10 @@
       "$fileManager" = "yazi"; #TODO fix yazi not working
       "$menu" = "wofi --show drun";
       "$mainMod" = "SUPER"; # Sets "Windows" key as main modifier
-      monitor = "eDP-1,1920x1080p@60.01,auto,1";
+      monitor = [
+        "DP-0, 2560x1440@164.96, 0x0, 1"
+        "HDM-0, 1920x180@75, 0x-1440, 1"
+                        ];
 
       env = [
         "XCURSOR_SIZE,24"
