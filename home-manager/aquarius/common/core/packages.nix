@@ -38,5 +38,6 @@
     ascii-image-converter
     ani-cli
     speedtest-cli
+    browsh
   ];
 }
