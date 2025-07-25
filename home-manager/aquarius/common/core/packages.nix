@@ -37,5 +37,6 @@
     artem
     ascii-image-converter
     ani-cli
+    tldr
   ];
 }
