@@ -133,6 +133,7 @@
         "$mainMod, J, togglesplit, # dwindle"
         "$mainMod, F, exec, firefox"
         "$mainMod, D, exec, vesktop"
+        "$mainMod, S, exec, spotify"
         "$mainMod, left, movefocus, l"
         "$mainMod, right, movefocus, r"
         "$mainMod, up, movefocus, u"
