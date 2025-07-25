@@ -32,6 +32,5 @@
     fd
     gale
     r2modman
-    hyprsysteminfo
   ];
 }
