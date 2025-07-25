@@ -15,8 +15,8 @@
       "$menu" = "wofi --show drun";
       "$mainMod" = "SUPER"; # Sets "Windows" key as main modifier
       monitor = [
-        "DP-0, 2560x1440@164.96, 0x0, 1"
-        "HDMI-0, 1920x1080@75, 0x-1440, 1"
+        "DP-0, 2560x1440@164.96, 0x1080, 1"
+        "HDMI-0, 1920x1080@75, 0x0, 1"
                         ];
 
       env = [
