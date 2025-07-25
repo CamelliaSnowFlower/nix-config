@@ -33,5 +33,6 @@
     gale
     r2modman
     spotify-cli-linux
+    kittysay
   ];
 }
