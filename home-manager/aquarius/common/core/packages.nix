@@ -34,5 +34,6 @@
     r2modman
     spotify-cli-linux
     pokemonsay
+    artem
   ];
 }
