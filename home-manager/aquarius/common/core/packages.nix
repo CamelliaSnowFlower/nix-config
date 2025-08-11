@@ -31,7 +31,6 @@
     blender
     pypy3
     fd
-    gale
     r2modman
     spotify-cli-linux
     pokemonsay
