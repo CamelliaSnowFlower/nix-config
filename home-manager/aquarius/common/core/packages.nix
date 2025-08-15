@@ -26,6 +26,7 @@
     chromium
     legcord
     orca-slicer
+    cura
     freecad
     openscad
     blender
