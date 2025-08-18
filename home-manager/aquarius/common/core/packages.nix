@@ -28,7 +28,6 @@
     orca-slicer
     freecad
     openscad
-    blender
     pypy3
     fd
     r2modman
