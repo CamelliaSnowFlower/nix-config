@@ -39,5 +39,7 @@
     speedtest-cli
     ddgr
     ffmpeg-full
+    obs-studio
+    obs-studio-plugins.droidcam-obs
   ];
 }
