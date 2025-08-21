@@ -70,7 +70,6 @@
           };
         };
 
-        presence.neocord.enable = true;
         terminal = {
           toggleterm = {
             enable = true;
