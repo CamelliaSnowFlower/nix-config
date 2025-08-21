@@ -8,5 +8,6 @@
     gimp
     darktable
     gphoto2
+    digikam
   ];
 }
