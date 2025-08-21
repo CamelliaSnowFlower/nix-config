@@ -38,5 +38,6 @@
     ani-cli
     speedtest-cli
     ddgr
+    ffmpeg-full
   ];
 }
