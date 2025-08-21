@@ -20,5 +20,5 @@
       obs-vkcapture
       droidcam-obs
     ];
-
-} 
+  };
+ } 
