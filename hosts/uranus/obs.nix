@@ -1,5 +1,8 @@
-{ config, pkgs, ... }:
 {
+  config,
+  pkgs,
+  ...
+}: {
   programs.obs-studio = {
     enable = true;
     enableVirtualCamera = true;
@@ -21,4 +24,4 @@
       droidcam-obs
     ];
   };
- } 
+}
