@@ -9,5 +9,6 @@
     darktable
     gphoto2
     digikam
+    droidcam
   ];
 }
