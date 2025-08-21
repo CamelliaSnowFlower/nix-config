@@ -39,5 +39,6 @@
     speedtest-cli
     ddgr
     ffmpeg-full
+    tidal
   ];
 }
