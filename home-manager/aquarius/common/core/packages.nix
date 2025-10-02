@@ -40,5 +40,6 @@
     ddgr
     ffmpeg-full
     angryipscanner
+    inkscape
   ];
 }
