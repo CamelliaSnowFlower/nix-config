@@ -41,6 +41,6 @@
     ffmpeg-full
     angryipscanner
     inkscape
-    unfi
+    unifi
   ];
 }
