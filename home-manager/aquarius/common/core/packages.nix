@@ -23,7 +23,6 @@
     imagemagickBig
     prismlauncher
     zulu17
-    chromium
     legcord
     orca-slicer
     freecad
