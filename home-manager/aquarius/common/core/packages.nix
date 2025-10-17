@@ -42,5 +42,6 @@
     angryipscanner
     inkscape
     ryubing
+    nsz
   ];
 }
