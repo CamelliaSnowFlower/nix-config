@@ -41,5 +41,6 @@
     ffmpeg-full
     angryipscanner
     inkscape
+    ryubing
   ];
 }
