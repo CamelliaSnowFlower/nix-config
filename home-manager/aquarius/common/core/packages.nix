@@ -42,5 +42,6 @@
     inkscape
     ryubing
     nsz
+    espeak
   ];
 }
