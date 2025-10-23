@@ -43,6 +43,6 @@
     ryubing
     nsz
     espeak
-    davinci-resolve-studio
+    davinci-resolve
   ];
 }
