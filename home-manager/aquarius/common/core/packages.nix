@@ -43,7 +43,6 @@
     ryubing
     nsz
     espeak
-    wineWowPackages.waylandFull
     davinci-resolve
   ];
 }
