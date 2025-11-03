@@ -43,6 +43,7 @@
     ryubing
     nsz
     espeak
+    fastfetch
     davinci-resolve
   ];
 }
