@@ -53,8 +53,9 @@
   };
 
   # startupprograms
+  xsession.windowManager.bspwm.enable = true;
   xsession.windowManager.bspwm.startupPrograms = [
-    "obsdian"
+    "obsidian"
     "spotify"
     ];
 
