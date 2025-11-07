@@ -52,6 +52,13 @@
     homeDirectory = "/home/aquarius";
   };
 
+  # startupprograms
+  xsession.windowManager.bspwm.startupPrograms = [
+    "obsdian"
+    "spotify"
+    ];
+
+
   # Add stuff for your user as you see fit:
   # programs.neovim.enable = true;
 
