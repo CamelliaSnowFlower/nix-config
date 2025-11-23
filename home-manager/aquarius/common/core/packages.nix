@@ -45,5 +45,6 @@
     espeak
     imagej
     davinci-resolve
+    quodlibet
   ];
 }
