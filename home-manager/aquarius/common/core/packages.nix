@@ -46,5 +46,6 @@
     imagej
     davinci-resolve
     quodlibet
+    xclicker
   ];
 }
