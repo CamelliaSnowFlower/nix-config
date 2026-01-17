@@ -46,7 +46,7 @@
     imagej
     davinci-resolve
     quodlibet
-    nexusmods-app
     xclicker
+    limo
   ];
 }
