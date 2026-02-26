@@ -10,7 +10,7 @@
       powerManagement.enable = false;
       powerManagement.finegrained = false;
       open = false;
-      package = config.boot.kernelPackages.nvidiaPackages.vulkan;
+      package = config.boot.kernelPackages.nvidiaPackages.vulkan_beta;
     };
   };
   services.xserver.videoDrivers = ["nvidia"];
