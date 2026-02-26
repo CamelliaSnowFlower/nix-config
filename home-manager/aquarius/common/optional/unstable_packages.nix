@@ -8,5 +8,6 @@
     nix-search
     vesktop
     blender
+    orca-slicer
   ];
 }

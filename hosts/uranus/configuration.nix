@@ -128,7 +128,6 @@
     neofetch
     obsidian
     kitty
-    orca-slicer
     freecad
   ];
 
