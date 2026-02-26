@@ -52,7 +52,6 @@
   # Enable the GNOME Desktop Environment.
   services.displayManager.gdm = {
     enable = true;
-    wayland = false;
   };
 
   services.desktopManager.gnome.enable = true;
@@ -129,6 +128,8 @@
     neofetch
     obsidian
     kitty
+    orca-slicer
+    freecad
   ];
 
   # Some programs need SUID wrappers, can be configured further or are

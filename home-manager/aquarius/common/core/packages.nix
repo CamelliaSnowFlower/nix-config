@@ -24,8 +24,6 @@
     prismlauncher
     zulu17
     legcord
-    orca-slicer
-    freecad
     openscad
     pypy3
     fd
