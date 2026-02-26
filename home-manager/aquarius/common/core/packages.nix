@@ -44,7 +44,6 @@
     nsz
     espeak
     imagej
-    davinci-resolve
     quodlibet
     xclicker
     limo
