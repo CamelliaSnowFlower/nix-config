@@ -8,6 +8,5 @@
     nix-search
     vesktop
     blender
-    python313Packages.kokoro
   ];
 }
