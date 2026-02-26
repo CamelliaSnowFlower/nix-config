@@ -7,6 +7,7 @@
   # Home-manager Script
   home.packages = with pkgs; [
     (writeShellScriptBin "hms" ''home-manager switch --flake .#$USER@$HOSTNAME |& nom'')
+    (writeShellScriptBin "sms" ''sudo nixos-rebuild switch --flake .#$HOSTNAME'')
     (writeShellScriptBin "hmsb" ''home-manager switch -b backup --flake .#$USER@$HOSTNAME |& nom'')
     (writeShellScriptBin "hh" ''cd /home/aquarius/Documents/nix-config/'')
     #spotifycli commands with pokemonsay intergration
