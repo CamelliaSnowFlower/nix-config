@@ -10,11 +10,11 @@
       powerManagement.enable = false;
       powerManagement.finegrained = false;
       open = false;
-      package = config.boot.kernelPackages.nvidiaPackages.beta;
+      package = config.boot.kernelPackages.nvidiaPackages.vulkan_beta;
     
       prime = {
-      offload.enable = true;
-      offload.enableOffloadCmd = true;
+        offload.enable = true;
+        offload.enableOffloadCmd = true;
 
       # run the following to find the pci ports for the graphics cards
       # nix shell nixpkgs#pciutils -c lspci | grep VGA
