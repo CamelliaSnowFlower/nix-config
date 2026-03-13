@@ -10,10 +10,14 @@
     remotePlay.openFirewall = true;
     dedicatedServer.openFirewall = true;
   };
-
+  # steam. mods, and minecraft tools
   environment.systemPackages = with pkgs; [
     protonup-ng
     mangohud
+    prismlauncher
+    # for prismlauncher 
+    zulu17 
+    r2modman
   ];
 
   environment.sessionVariables = {

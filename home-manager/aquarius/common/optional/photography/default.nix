@@ -9,5 +9,8 @@
     darktable
     gphoto2
     digikam
+    imagemagickBig
+    inkscape
+    imagej
   ];
 }
