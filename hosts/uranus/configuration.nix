@@ -133,6 +133,7 @@
     pciutils
     foliate
     btop
+    wineWow64Packages.waylandFull
   ];
 
   # Some programs need SUID wrappers, can be configured further or are
