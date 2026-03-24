@@ -14,6 +14,7 @@
     ./steam.nix
     ./obs.nix
     ./3D.nix
+    ./scripts.nix
   ];
 
   # Bootloader.
