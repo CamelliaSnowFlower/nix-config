@@ -16,7 +16,6 @@
     lazygit
     usbimager
     # move to both 
-    btop
     legcord
     fd
     spotify-cli-linux
