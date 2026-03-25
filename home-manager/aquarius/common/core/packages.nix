@@ -31,5 +31,6 @@
     quodlibet
     #test 
     xclicker
+    poppler-utils
   ];
 }
