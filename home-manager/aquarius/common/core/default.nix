@@ -11,5 +11,6 @@
     ./ghostty.nix
     ./scripts.nix
     ./packages.nix
+    ./stylix.nix
   ];
 }
