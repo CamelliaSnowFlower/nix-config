@@ -16,11 +16,11 @@
     settings = {
       vim = {
         vimAlias = true;
-        theme = {
-          enable = true;
-          name = "gruvbox";
-          style = "dark";
-        };
+#theme = {
+#         enable = true;
+#         name = "gruvbox";
+#         style = "dark";
+#       };
 
         spellcheck.enable = true;
         # mini text editing
