@@ -12,9 +12,9 @@
         name = "aquarius";
         isDefault = true;
         #settings = {};
-        extensions = with pkgs.nur.repos.rycee.firefox-addons; [
-         darkreader
-         ];
+#       extensions = with pkgs.nur.repos.rycee.firefox-addons; [
+#         darkreader
+#         ];
         };
       };
     };
