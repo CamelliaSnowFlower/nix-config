@@ -1,7 +1,6 @@
 {...}: {
   imports = [
-    ./desktop
+#./desktop
     ./unstable_packages.nix
-    ./photography
   ];
 }
