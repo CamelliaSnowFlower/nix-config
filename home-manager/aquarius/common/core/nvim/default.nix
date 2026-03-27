@@ -23,7 +23,6 @@
         };
 
         spellcheck.enable = true;
-        spellcheck.extraSpellWords = {"en.utf-8" = ["Astro"];};
         # mini text editing
         mini.ai.enable = true;
         mini.comment.enable = true;
@@ -62,12 +61,7 @@
 
           nix.enable = true;
           markdown.enable = true;
-          # astro.enable = true;
           python.enable = true;
-          rust = {
-            enable = true;
-            crates.enable = true;
-          };
         };
 
         terminal = {

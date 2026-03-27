@@ -10,10 +10,10 @@
     inputs.stylix.homeManagerModules.default
   ];
 
-  stylix = [
+  stylix = {
     enable = true;
     image = ./TADC.jpg;
     polarity ="dark";
 
-  ];
+};
 }
