@@ -14,6 +14,6 @@
     enable = true;
     image = ./TADC.jpg;
     polarity ="dark";
-    targets.firefox.enable = true;
+    targets.firefox.firefoxGnomeTheme.enable = true;
 };
 }
