@@ -14,6 +14,6 @@
     enable = true;
     image = ./TADC.jpg;
     polarity ="dark";
-    targets.firefox.firefoxGnomeTheme.enable = true;
+    targets.firefox.profileNames = ["aquarius"];
 };
 }
