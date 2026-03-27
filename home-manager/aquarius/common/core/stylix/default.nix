@@ -7,7 +7,7 @@
   ...
 }: {
   imports = [
-    inputs.stylix.homeManagerModules.default
+    inputs.stylix.homeModules.default
   ];
 
   stylix = {
