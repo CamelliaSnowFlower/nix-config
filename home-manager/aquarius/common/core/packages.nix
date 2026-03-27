@@ -32,5 +32,6 @@
     #test 
     xclicker
     poppler-utils
+    neo
   ];
 }
