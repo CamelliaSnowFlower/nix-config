@@ -22,7 +22,7 @@
 
       sansSerif = {
       package = pkgs.scientifica;
-      name = "DejaVu Sans";
+      name = "Scientifica Sans";
       };
 
       monospace = {
