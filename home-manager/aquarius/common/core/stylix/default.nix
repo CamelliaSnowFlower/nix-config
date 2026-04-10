@@ -21,7 +21,7 @@
       };
 
       sansSerif = {
-      package = pkgs.dejavu_fonts;
+      package = pkgs.scientifica;
       name = "DejaVu Sans";
       };
 
