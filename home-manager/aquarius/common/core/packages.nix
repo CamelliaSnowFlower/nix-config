@@ -32,6 +32,6 @@
     #test 
     xclicker
     poppler-utils
-    neo
+    easyeffects
   ];
 }
