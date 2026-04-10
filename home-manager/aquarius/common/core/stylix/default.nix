@@ -17,8 +17,8 @@
     polarity ="dark";
     fonts = {
       serif = {
-      package = pkgs.dejavu_fonts;
-      name = "DejaVu Serif";
+      package = pkgs.scientifica;
+      name = "Scientifica Serif";
       };
 
       sansSerif = {
