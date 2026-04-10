@@ -12,6 +12,7 @@
 
   stylix = {
     enable = true;
+    autoEnable = true;
     image = ./TADC.jpg;
     polarity ="dark";
     fonts = {
