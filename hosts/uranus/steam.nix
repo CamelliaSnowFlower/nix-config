@@ -16,7 +16,8 @@
     mangohud
     prismlauncher
     # for prismlauncher 
-    zulu17 
+    zulu17
+    zulu25 #vulkan minecraft
     r2modman
   ];
 
