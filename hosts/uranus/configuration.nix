@@ -134,8 +134,8 @@
     pciutils
     foliate
     btop
-    wineWow64Packages.waylandFull
     gnome-monitor-config
+    easyeffects
   ];
 
   # Some programs need SUID wrappers, can be configured further or are
