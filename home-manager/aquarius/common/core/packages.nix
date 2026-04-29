@@ -20,7 +20,6 @@
     fd
     spotify-cli-linux
     pokemonsay
-    ani-cli
     speedtest-cli
     # move and configure 
     ffmpeg-full
