@@ -9,9 +9,10 @@
     gamescopeSession.enable = true;
     remotePlay.openFirewall = true;
     dedicatedServer.openFirewall = true;
+    extraPackages = with pkgs
   };
   # steam. mods, and minecraft tools
-  environment.systemPackages = with pkgs; [
+  environment.systemPackages = with pkgs; [hidapi];
     protonup-ng
     mangohud
     prismlauncher
@@ -19,7 +20,6 @@
     zulu17
     zulu25 #vulkan minecraft
     r2modman
-    hidapi
   ];
 
   environment.sessionVariables = {
