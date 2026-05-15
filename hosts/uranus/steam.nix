@@ -9,10 +9,10 @@
     gamescopeSession.enable = true;
     remotePlay.openFirewall = true;
     dedicatedServer.openFirewall = true;
-    extraPackages = with pkgs
+    extraPackages = with pkgs; [hidapi];
   };
   # steam. mods, and minecraft tools
-  environment.systemPackages = with pkgs; [hidapi];
+  environment.systemPackages = with pkgs; [
     protonup-ng
     mangohud
     prismlauncher
