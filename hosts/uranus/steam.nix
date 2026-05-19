@@ -20,6 +20,7 @@
     zulu17
     zulu25 #vulkan minecraft
     r2modman
+    extest
   ];
 
   environment.sessionVariables = {
