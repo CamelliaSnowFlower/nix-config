@@ -135,7 +135,6 @@
     foliate
     btop
     gnome-monitor-config
-    easyeffects
   ];
 
   # Some programs need SUID wrappers, can be configured further or are
