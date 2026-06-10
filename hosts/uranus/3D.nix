@@ -7,5 +7,6 @@
     orca-slicer
     # for orca-slicer scripts 
     pypy3
+    openscad
   ];
 }
