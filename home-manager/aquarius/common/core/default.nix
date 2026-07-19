@@ -13,6 +13,5 @@
     ./packages.nix
     ./stylix
     ./photography
-    ./librewolf.nix
   ];
 }
