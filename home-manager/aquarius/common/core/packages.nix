@@ -32,5 +32,6 @@
     xclicker
     poppler-utils
     nix-index
+    jq
   ];
 }
