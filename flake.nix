@@ -3,14 +3,14 @@
 
   inputs = {
     # Nixpkgs
-    nixpkgs.url = "github:nixos/nixpkgs/nixos-25.11";
+    nixpkgs.url = "github:nixos/nixpkgs/nixos-26.05";
     # You can access packages and modules from different nixpkgs revs
     # at the same time. Here's an working example:
     nixpkgs-unstable.url = "github:nixos/nixpkgs/nixos-unstable";
     # Also see the 'unstable-packages' overlay at 'overlays/default.nix'.
 
     # Home manager
-    home-manager.url = "github:nix-community/home-manager/release-25.11";
+    home-manager.url = "github:nix-community/home-manager/release-26.05";
     home-manager.inputs.nixpkgs.follows = "nixpkgs";
 
     # Nixos-harware
@@ -26,7 +26,7 @@
     };
 
     # Stylix for simple ricing
-    stylix.url = "github:nix-community/stylix/release-25.11";
+    stylix.url = "github:nix-community/stylix/release-26.05";
     stylix.inputs.nixpkgs.follows = "nixpkgs";
   };
 
@@ -40,6 +40,7 @@
     ...
   } @ inputs: let
     inherit (self) outputs;
+
     # Supported systems for your flake packages, shell, etc.
     systems = [
       "aarch64-linux"
@@ -51,6 +52,18 @@
     # This is a function that generates an attribute by calling a function you
     # pass to it, with each system as an argument
     forAllSystems = nixpkgs.lib.genAttrs systems;
+
+    # Builds a standalone home-manager configuration for "<user>@<host>".
+    # Both of your homeConfigurations were identical apart from the name,
+    # so this keeps them in sync instead of hand-editing two copies.
+    mkHome = username: home-manager.lib.homeManagerConfiguration {
+      pkgs = nixpkgs.legacyPackages.x86_64-linux; # Home-manager requires 'pkgs' instance
+      extraSpecialArgs = {inherit inputs outputs;};
+      modules = [
+        # > Our main home-manager configuration file <
+        ./home-manager/${username}/default.nix
+      ];
+    };
   in {
     # Your custom packages
     # Accessible through 'nix build', 'nix shell', etc
@@ -94,22 +107,8 @@
     # Available through 'home-manager --flake .#your-username@your-hostname'
     homeConfigurations = {
       # Saturn influences on Aquarius can bring about stabilty, success, and personal growth.
-      "aquarius@saturn" = home-manager.lib.homeManagerConfiguration {
-        pkgs = nixpkgs.legacyPackages.x86_64-linux; # Home-manager requires 'pkgs' instance
-        extraSpecialArgs = {inherit inputs outputs;};
-        modules = [
-          # > Our main home-manager configuration file <
-          ./home-manager/aquarius/default.nix
-        ];
-      };
-      "aquarius@uranus" = home-manager.lib.homeManagerConfiguration {
-        pkgs = nixpkgs.legacyPackages.x86_64-linux; # Home-manager requires 'pkgs' instance
-        extraSpecialArgs = {inherit inputs outputs;};
-        modules = [
-          # > Our main home-manager configuration file <
-          ./home-manager/aquarius/default.nix
-        ];
-      };
+      "aquarius@saturn" = mkHome "aquarius";
+      "aquarius@uranus" = mkHome "aquarius";
     };
   };
 }

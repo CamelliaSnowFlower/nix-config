@@ -32,7 +32,5 @@
     xclicker
     poppler-utils
     nix-index
-    jq
-    unzip
   ];
 }
