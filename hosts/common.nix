@@ -1,6 +1,20 @@
 # Settings shared by every host. Import this from each host's
 # configuration.nix and only keep host-specific stuff there.
-{pkgs, ...}: {
+{
+  pkgs,
+  outputs,
+  ...
+}: {
+  # Without this, custom packages from ../pkgs (like deepnest) are only
+  # visible to home-manager, not to environment.systemPackages here -
+  # home-manager/aquarius/default.nix applies these same overlays on
+  # its own, but the NixOS system-level pkgs needs them applied too.
+  nixpkgs.overlays = [
+    outputs.overlays.additions
+    outputs.overlays.modifications
+    outputs.overlays.unstable-packages
+  ];
+
   # Set your time zone.
   time.timeZone = "America/Chicago";
 
