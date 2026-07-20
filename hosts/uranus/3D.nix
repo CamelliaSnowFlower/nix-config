@@ -3,7 +3,7 @@
 
   environment.systemPackages = with pkgs; [
     freecad
-    blender-hip
+    blender
     orca-slicer
     # for orca-slicer scripts 
     pypy3
