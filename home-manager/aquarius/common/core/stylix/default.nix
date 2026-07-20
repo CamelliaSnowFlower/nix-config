@@ -13,6 +13,13 @@
   stylix = {
     enable = true;
     autoEnable = true;
+
+    # gtksourceview's stylix target forces a local rebuild of anything
+    # linking it - including inkscape - instead of using the cached
+    # binary from Hydra. Not worth the multi-hour Inkscape compile for
+    # a themed XML editor pane.
+    targets.gtksourceview.enable = false;
+
     image = ./TADC.jpg;
     polarity ="dark";
     fonts = {
