@@ -6,7 +6,7 @@
 }: {
   home.packages = with pkgs; [
     tree
-    neofetch
+    fastfetch
     spotify
     nix-output-monitor
     asciiquarium

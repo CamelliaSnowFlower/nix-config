@@ -83,7 +83,7 @@
     vim
     wget
     git
-    neofetch
+    fastfetch
     obsidian
     lshw
     pciutils
