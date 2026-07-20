@@ -12,9 +12,7 @@
   # inside it.
   src = fetchzip {
     url = "https://deepnest.io/Deepnest-${version}-linux.zip";
-    # Placeholder. Nix will refuse to build and print the real hash
-    # the first time - swap it in when that happens.
-    hash = lib.fakeHash;
+    hash = "sha256-GXbTYXbHwjq99MqgrMUtYUzOxopLKh6XowqgJV3id20=";
     stripRoot = true;
   };
 
