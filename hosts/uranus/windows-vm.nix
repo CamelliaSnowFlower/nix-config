@@ -58,10 +58,9 @@
   virtualisation.libvirtd = {
     enable = true;
     qemu = {
-      # UEFI firmware - needed for GPU passthrough to work reliably,
-      # and required for Windows 11 regardless.
-      ovmf.enable = true;
       # Emulated TPM 2.0, which Windows 11 checks for at install time.
+      # (UEFI/OVMF firmware used to need enabling here too, but as of
+      # recent nixpkgs it ships with QEMU by default - nothing to set.)
       swtpm.enable = true;
     };
   };
