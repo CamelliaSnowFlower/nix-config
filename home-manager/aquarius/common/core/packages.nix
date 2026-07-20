@@ -24,13 +24,6 @@
     # move and configure 
     ffmpeg-full
     angryipscanner
-    #config 
-    espeak
-    #test 
-    quodlibet
-    #test 
-    xclicker
     poppler-utils
-    nix-index
   ];
 }

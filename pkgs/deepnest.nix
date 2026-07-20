@@ -27,6 +27,15 @@ in
     inherit pname version;
     src = appimage;
 
+    # This build dates from 2018 and links against GTK2, not the GTK3
+    # the default FHS env assumes for Electron apps - hence the
+    # missing libgtk-x11-2.0.so.0 error without this.
+    extraPkgs = pkgs:
+      with pkgs; [
+        gtk2
+        libappindicator-gtk2
+      ];
+
     extraInstallCommands = ''
       install -Dm444 ${appimageContents}/deepnest.desktop -t $out/share/applications
       substituteInPlace $out/share/applications/deepnest.desktop \
