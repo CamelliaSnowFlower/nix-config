@@ -8,6 +8,5 @@
     # for orca-slicer scripts 
     pypy3
     openscad
-    deepnest
   ];
 }
