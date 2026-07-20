@@ -18,8 +18,11 @@
 #      lspci -nnk -d 10de:
 #    "Kernel driver in use: vfio-pci" is what you want to see.
 #
-# 2. Confirm the 1050 Ti sits in its own clean IOMMU group (no other
-#    unrelated devices mixed in), otherwise passthrough will fail:
+# 2. Re-run the IOMMU group check - confirm the 1050 Ti (and its audio
+#    function) now sit in their own group, separate from the AMD GPU
+#    and the PCIe switch bridges. If they're still merged, the
+#    override isn't taking effect and needs troubleshooting before
+#    going further:
 #      for g in /sys/kernel/iommu_groups/*; do
 #        echo "group ${g##*/}:"; lspci -nns $(basename -a $g/devices/*)
 #      done | grep -i -B1 nvidia
@@ -35,13 +38,27 @@
 #    - Install VirtIO drivers (pkgs.virtio-win, if you want it added
 #      to your config) inside Windows for disk/network performance,
 #      then install the real Nvidia driver.
+# --- Why the XanMod kernel ---
+# Your Z370 board groups both GPUs (and the PCIe switch they sit
+# behind) into one IOMMU group instead of isolating them - common on
+# consumer boards that don't expose ACS. XanMod is a normal
+# general-purpose kernel that happens to ship the PCIe ACS override
+# patch built in, which avoids needing to fetch and hope an external
+# out-of-tree patch still applies cleanly to whatever kernel version
+# is current. It's a full from-source kernel build the first time,
+# so expect that rebuild to take a while.
 {pkgs, ...}: {
+  boot.kernelPackages = pkgs.linuxPackages_xanmod_latest;
+
   # Intel CPU (per hardware-configuration.nix), so intel_iommu - not
   # amd_iommu, which is for AMD CPUs and unrelated to the AMD *GPU*
-  # here.
+  # here. pcie_acs_override is what actually splits the merged IOMMU
+  # group - "downstream" covers the PCIe switch, "multifunction"
+  # covers each GPU's own VGA+audio pairing.
   boot.kernelParams = [
     "intel_iommu=on"
     "iommu=pt"
+    "pcie_acs_override=downstream,multifunction"
   ];
 
   # REQUIRED: replace XXXX:XXXX,XXXX:XXXX with the two IDs from the
