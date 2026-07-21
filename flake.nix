@@ -101,6 +101,14 @@
           ./hosts/uranus/configuration.nix
         ];
       };
+      # Mercury rules Gemini - the user managing this host.
+      mercury = nixpkgs.lib.nixosSystem {
+        specialArgs = {inherit inputs outputs;};
+        modules = [
+          # > Our main nixos configuration file <
+          ./hosts/mercury/configuration.nix
+        ];
+      };
     };
 
     # Standalone home-manager configuration entrypoint

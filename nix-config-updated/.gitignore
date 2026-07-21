@@ -1,7 +1,0 @@
-# Editor backup/swap files
-*~
-*.swp
-
-# Nix build results
-result
-result-*

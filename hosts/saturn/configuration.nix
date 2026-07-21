@@ -10,6 +10,7 @@
     # Include the results of the hardware scan.
     ./hardware-configuration.nix
     ../common.nix
+    ../desktop.nix
   ];
 
   networking.hostName = "saturn"; # Define your hostname.

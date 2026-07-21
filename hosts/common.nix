@@ -39,55 +39,21 @@
   # Enable networking
   networking.networkmanager.enable = true;
 
-  # Enable the X11 windowing system.
-  services.xserver.enable = true;
-
-  # Enable the GNOME Desktop Environment.
-  services.displayManager.gdm.enable = true;
-  services.desktopManager.gnome.enable = true;
-
-  # Configure keymap in X11
-  services.xserver.xkb = {
-    layout = "us";
-    variant = "";
-  };
-
-  # Enable CUPS to print documents.
-  services.printing.enable = true;
-
-  # Enable sound with pipewire.
-  services.pulseaudio.enable = false;
-  security.rtkit.enable = true;
-  services.pipewire = {
-    enable = true;
-    alsa.enable = true;
-    alsa.support32Bit = true;
-    pulse.enable = true;
-  };
-
-  # Enable fingerprint services
-  services.fprintd.enable = true;
-
-  # Install firefox.
-  programs.firefox.enable = true;
-
   # Allow unfree packages
   nixpkgs.config.allowUnfree = true;
 
   # Enable Flakes
   nix.settings.experimental-features = ["nix-command" "flakes"];
 
-  # Packages every host gets. Add host-specific ones in that host's
-  # own configuration.nix instead of here.
+  # Packages every host gets - CLI basics only. GUI apps belong in
+  # desktop.nix instead, so a headless host doesn't get them.
   environment.systemPackages = with pkgs; [
     vim
     wget
     git
     fastfetch
-    obsidian
     lshw
     pciutils
-    foliate
     btop
   ];
 }
