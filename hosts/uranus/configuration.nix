@@ -42,6 +42,9 @@
   # Host-specific packages, on top of the shared list in ../common.nix.
   environment.systemPackages = with pkgs; [
     gnome-monitor-config
+    # Moved from home-manager (aquarius's packages-cli.nix) - uranus-only.
+    ffmpeg-full
+    poppler-utils
   ];
 
   # Enable the OpenSSH daemon.

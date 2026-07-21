@@ -1,6 +1,7 @@
 # Home-manager profile for gemini (mercury). Deliberately minimal -
-# no desktop bits, just the shared workflow scripts/packages from
-# ../common. Add gemini-specific things here as they come up.
+# no desktop bits, and imports the CLI-only pieces of ../common
+# directly rather than the full aggregator, so no GUI packages end up
+# on a headless box. Add gemini-specific things here as they come up.
 {
   inputs,
   outputs,
@@ -10,7 +11,10 @@
   ...
 }: {
   imports = [
-    ../common
+    ../common/git.nix
+    ../common/scripts.nix
+    ../common/packages-cli.nix
+    ../common/packages-unstable-cli.nix
   ];
 
   nixpkgs = {

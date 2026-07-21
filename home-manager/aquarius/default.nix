@@ -20,7 +20,6 @@
     # ./nvim.nix
     ../common
     ./common/core
-    ./common/optional
   ];
 
   nixpkgs = {

@@ -9,7 +9,8 @@
     ./nvim
 #./ghostty.nix
     ./scripts.nix
-    ./packages.nix
+    ./packages-cli.nix
+    ./packages-gui.nix
     ./stylix
     ./photography
     ./librewolf.nix
