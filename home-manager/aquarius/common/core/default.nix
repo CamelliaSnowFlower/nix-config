@@ -7,7 +7,6 @@
   imports = [
     # This is your home-manager configuration file
     ./nvim
-    ./git.nix
 #./ghostty.nix
     ./scripts.nix
     ./packages.nix

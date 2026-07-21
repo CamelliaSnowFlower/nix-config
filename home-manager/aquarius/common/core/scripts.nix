@@ -4,12 +4,9 @@
   pkgs,
   ...
 }: {
-  # Home-manager Script
+  # hms/sms/hmsb/hh moved to home-manager/common/scripts.nix - shared
+  # workflow scripts, not aquarius-specific.
   home.packages = with pkgs; [
-    (writeShellScriptBin "hms" ''home-manager switch --flake .#$USER@$HOSTNAME |& nom'')
-    (writeShellScriptBin "sms" ''sudo nixos-rebuild switch --flake .#$HOSTNAME'')
-    (writeShellScriptBin "hmsb" ''home-manager switch -b backup --flake .#$USER@$HOSTNAME |& nom'')
-    (writeShellScriptBin "hh" ''cd /home/aquarius/Documents/nix-config/'')
     #spotifycli commands with pokemonsay intergration
     (writeShellScriptBin "skip" ''echo "Up Next!" && spotifycli --next && spotifycli --song && echo "by" && spotifycli --artist'')
     (writeShellScriptBin "rewind" ''echo "Run it Back:" && spotifycli --prev && spotifycli --song && echo "by" && spotifycli --artist'')

@@ -8,19 +8,12 @@
     tree
     fastfetch
     spotify
-    nix-output-monitor
     asciiquarium
     cmatrix
     pomodoro
     gparted
     lazygit
     usbimager
-    # move to both 
-    legcord
-    fd
-    spotify-cli-linux
-    pokemonsay
-    speedtest-cli
     # move and configure 
     ffmpeg-full
     angryipscanner

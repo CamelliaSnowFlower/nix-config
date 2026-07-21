@@ -117,6 +117,8 @@
       # Saturn influences on Aquarius can bring about stabilty, success, and personal growth.
       "aquarius@saturn" = mkHome "aquarius";
       "aquarius@uranus" = mkHome "aquarius";
+      # Mercury rules Gemini.
+      "gemini@mercury" = mkHome "gemini";
     };
   };
 }
