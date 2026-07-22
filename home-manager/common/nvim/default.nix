@@ -10,7 +10,7 @@
     ./nvimTree.nix
   ];
 
-  programs.nvf = {
+  programs.nvf = lib.mkIf config.profiles.coding.enable {
     enable = true;
     enableManpages = true;
     settings = {
