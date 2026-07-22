@@ -8,41 +8,20 @@
   pkgs,
   ...
 }: {
-  # You can import other home-manager modules here
   imports = [
-    # If you want to use modules your own flake exports (from modules/home-manager):
-    # outputs.homeManagerModules.example
-
-    # Or modules exported from other flakes (such as nix-colors):
-    # inputs.nix-colors.homeManagerModules.default
-
-    # You can also split up your configuration and import pieces of it here:
-    # ./nvim.nix
     ../common
-    ./common/core
+    ../optional
+    ./librewolf.nix
+    ./stylix
   ];
 
   nixpkgs = {
-    # You can add overlays here
     overlays = [
-      # Add overlays your own flake exports (from overlays and pkgs dir):
       outputs.overlays.additions
       outputs.overlays.modifications
       outputs.overlays.unstable-packages
-
-      # You can also add overlays exported from other flakes:
-      # neovim-nightly-overlay.overlays.default
-
-      # Or define it inline, for example:
-      # (final: prev: {
-      #   hi = final.hello.overrideAttrs (oldAttrs: {
-      #     patches = [ ./change-hello-to-hi.patch ];
-      #   });
-      # })
     ];
-    # Configure your nixpkgs instance
     config = {
-      # Disable if you don't want unfree packages
       allowUnfree = true;
     };
   };
@@ -52,16 +31,33 @@
     homeDirectory = "/home/aquarius";
   };
 
+  # Which use-case profiles this user gets - see ../options.nix.
+  profiles = {
+    photography.enable = true;
+    coding.enable = true;
+    sysadmin.enable = true;
+    desktop.enable = true;
+    unstable.enable = true;
+  };
+
   # startupprograms
   xsession.windowManager.bspwm.enable = true;
   xsession.windowManager.bspwm.startupPrograms = [
     "obsidian"
     "spotify"
-    ];
+  ];
 
-
-  # Add stuff for your user as you see fit:
-  # programs.neovim.enable = true;
+  # Personal Spotify remote-control aliases with pokemonsay
+  # integration. Just mine, not a generic "desktop" persona thing, so
+  # kept here rather than in ../optional/desktop.nix.
+  home.packages = with pkgs; [
+    (writeShellScriptBin "skip" ''echo "Up Next!" && spotifycli --next && spotifycli --song && echo "by" && spotifycli --artist'')
+    (writeShellScriptBin "rewind" ''echo "Run it Back:" && spotifycli --prev && spotifycli --song && echo "by" && spotifycli --artist'')
+    (writeShellScriptBin "playpause" ''echo ">||" && spotifycli --playpause && spotifycli --song && echo "by" && spotifycli --artist'')
+    (writeShellScriptBin "rwp" ''rewind | pokemonsay'')
+    (writeShellScriptBin "skp" ''skip | pokemonsay'')
+    (writeShellScriptBin "pp" ''playpause | pokemonsay'')
+  ];
 
   # Enable home-manager
   programs.home-manager.enable = true;

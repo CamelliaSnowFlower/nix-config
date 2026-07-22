@@ -1,7 +1,7 @@
-# Home-manager profile for gemini (mercury). Deliberately minimal -
-# no desktop bits, and imports the CLI-only pieces of ../common
-# directly rather than the full aggregator, so no GUI packages end up
-# on a headless box. Add gemini-specific things here as they come up.
+# Home-manager profile for gemini (mercury). Headless admin box - only
+# the coding (git + neovim, for editing configs over SSH) and sysadmin
+# (nix workflow scripts) profiles are on. photography/desktop/unstable
+# all default to false via ../options.nix.
 {
   inputs,
   outputs,
@@ -11,10 +11,8 @@
   ...
 }: {
   imports = [
-    ../common/git.nix
-    ../common/scripts.nix
-    ../common/packages-cli.nix
-    ../common/packages-unstable-cli.nix
+    ../common
+    ../optional
   ];
 
   nixpkgs = {
@@ -31,6 +29,11 @@
   home = {
     username = "gemini";
     homeDirectory = "/home/gemini";
+  };
+
+  profiles = {
+    coding.enable = true;
+    sysadmin.enable = true;
   };
 
   programs.home-manager.enable = true;
