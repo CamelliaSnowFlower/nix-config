@@ -79,6 +79,11 @@
       # (UEFI/OVMF firmware used to need enabling here too, but as of
       # recent nixpkgs it ships with QEMU by default - nothing to set.)
       swtpm.enable = true;
+      # Needed for virtiofs (host<->guest shared folder). virt-manager
+      # assumes a default binary path that doesn't exist on NixOS -
+      # this is what actually makes it available at
+      # /run/current-system/sw/bin/virtiofsd for the VM's XML to use.
+      vhostUserPackages = [pkgs.virtiofsd];
     };
   };
 
