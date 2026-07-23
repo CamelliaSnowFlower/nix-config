@@ -87,10 +87,23 @@
 
   # Driver ISO for VirtIO disk/network inside the Windows guest - much
   # faster than the default emulated IDE/SATA disk and e1000 NIC.
+  #
+  # NOTE: pkgs.virtio-win itself extracts the ISO during its build
+  # rather than keeping it as a file, so it can't be mounted as-is.
+  # This fetches the same upstream ISO nixpkgs' own package uses and
+  # keeps it intact instead.
   # Lands at /run/current-system/sw/share/virtio-win/virtio-win.iso -
   # attach it to the VM as a second CD-ROM drive in virt-manager, then
   # install the drivers from inside Windows.
-  environment.systemPackages = [pkgs.virtio-win];
+  environment.systemPackages = [
+    (pkgs.runCommand "virtio-win-iso" {} ''
+      mkdir -p $out/share/virtio-win
+      cp ${pkgs.fetchurl {
+        url = "https://fedorapeople.org/groups/virt/virtio-win/direct-downloads/archive-virtio/virtio-win-0.1.285-1/virtio-win.iso";
+        hash = "sha256-4UzyuUSSw+kl8AcLp/3+3rIEjJHuqcWlr7MCMqOXYzE=";
+      }} $out/share/virtio-win/virtio-win.iso
+    '')
+  ];
 
   users.users.aquarius.extraGroups = ["libvirtd"];
 }
