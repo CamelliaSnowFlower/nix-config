@@ -85,5 +85,12 @@
   # GUI for creating and managing the VM.
   programs.virt-manager.enable = true;
 
+  # Driver ISO for VirtIO disk/network inside the Windows guest - much
+  # faster than the default emulated IDE/SATA disk and e1000 NIC.
+  # Lands at /run/current-system/sw/share/virtio-win/virtio-win.iso -
+  # attach it to the VM as a second CD-ROM drive in virt-manager, then
+  # install the drivers from inside Windows.
+  environment.systemPackages = [pkgs.virtio-win];
+
   users.users.aquarius.extraGroups = ["libvirtd"];
 }
