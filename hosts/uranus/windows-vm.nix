@@ -83,6 +83,24 @@
   };
 
   # GUI for creating and managing the VM.
+  # The libvirt "default" NAT network is defined automatically but
+  # isn't set to autostart on its own - without this, starting a VM
+  # fails with "network 'default' is not active" until you manually
+  # run `virsh net-autostart default`.
+  systemd.services.libvirtd-default-net-autostart = {
+    description = "Autostart the libvirt default network";
+    after = ["libvirtd.service"];
+    wantedBy = ["multi-user.target"];
+    serviceConfig = {
+      Type = "oneshot";
+      RemainAfterExit = true;
+    };
+    script = ''
+      ${pkgs.libvirt}/bin/virsh net-autostart default || true
+      ${pkgs.libvirt}/bin/virsh net-start default || true
+    '';
+  };
+
   programs.virt-manager.enable = true;
 
   # Driver ISO for VirtIO disk/network inside the Windows guest - much
