@@ -28,6 +28,30 @@
     # Stylix for simple ricing
     stylix.url = "github:nix-community/stylix/release-26.05";
     stylix.inputs.nixpkgs.follows = "nixpkgs";
+
+    # Declarative disk partitioning for mercury.
+    disko = {
+      url = "github:nix-community/disko";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
+    # Declarative ZFS dataset management, layered on top of disko, for
+    # mercury's storage pool.
+    flake-parts.url = "github:hercules-ci/flake-parts";
+    disko-zfs = {
+      url = "github:numtide/disko-zfs";
+      inputs.nixpkgs.follows = "nixpkgs";
+      inputs.flake-parts.follows = "flake-parts";
+      inputs.disko.follows = "disko";
+    };
+
+    # Remote NixOS install over SSH via kexec - no USB/monitor needed,
+    # which matters once mercury has no iGPU to give local console
+    # output at all.
+    nixos-anywhere = {
+      url = "github:nix-community/nixos-anywhere";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
   outputs = {
