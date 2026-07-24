@@ -11,7 +11,6 @@
   imports = [
     ../common
     ../optional
-    ./librewolf.nix
     ./stylix
   ];
 
