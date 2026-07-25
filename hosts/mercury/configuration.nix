@@ -16,6 +16,7 @@
     ../common.nix
     ./disko.nix
     ./storage-pool.nix
+    ./samba-shares.nix
   ];
 
   networking.hostName = "mercury"; # Define your hostname.
