@@ -36,6 +36,12 @@
     sysadmin.enable = true;
   };
 
+  # Pulls the latest pushed config from GitHub over HTTPS - relies on
+  # the repo here being the plain HTTPS clone (no SSH key needed).
+  home.packages = with pkgs; [
+    (writeShellScriptBin "gmu" ''cd ${config.home.homeDirectory}/Documents/nix-config && git pull'')
+  ];
+
   programs.home-manager.enable = true;
   systemd.user.startServices = "sd-switch";
 

@@ -22,6 +22,13 @@ in {
       (writeShellScriptBin "sms" ''sudo nixos-rebuild switch --flake .#$HOSTNAME'')
       (writeShellScriptBin "hmsb" ''home-manager switch -b backup --flake .#$USER@$HOSTNAME |& nom'')
       (writeShellScriptBin "hh" ''cd ${config.home.homeDirectory}/Documents/nix-config/'')
+
+      # Remote equivalents of sms/hms, for mercury specifically since
+      # it's headless - runs the rebuild over SSH rather than locally.
+      # -t forces a real TTY so sudo's password prompt actually works
+      # through the SSH pipe.
+      (writeShellScriptBin "sms-mercury" ''ssh -t gemini@192.168.1.80 "cd ~/Documents/nix-config && sudo nixos-rebuild switch --flake .#mercury |& nom"'')
+      (writeShellScriptBin "hms-mercury" ''ssh -t gemini@192.168.1.80 "cd ~/Documents/nix-config && home-manager switch --flake .#gemini@mercury |& nom"'')
     ];
   };
 }
