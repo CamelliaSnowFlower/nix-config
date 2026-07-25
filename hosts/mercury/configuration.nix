@@ -37,7 +37,7 @@
   # reboot. Pinning to whatever kernel line the ZFS package in this
   # nixpkgs revision actually supports fixes it now and keeps it from
   # recurring as nixpkgs updates over time.
-  boot.kernelPackages = config.boot.zfs.package.latestCompatibleLinuxPackages;
+  boot.kernelPackages = pkgs.linuxPackages;
 
   # aquarius's key from uranus - lets you SSH in from uranus without a
   # password, and means root access survives a reinstall without
