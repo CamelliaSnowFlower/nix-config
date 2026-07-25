@@ -15,9 +15,20 @@
     ./hardware-configuration.nix
     ../common.nix
     ./disko.nix
+    ./storage-pool.nix
   ];
 
   networking.hostName = "mercury"; # Define your hostname.
+
+  # ZFS support for the storage-pool.nix RAIDZ2 pool. hostId just
+  # needs to be unique among any ZFS hosts on the same network - not
+  # secret, doesn't need to match anything.
+  boot.supportedFilesystems = ["zfs"];
+  networking.hostId = "6d778fb4";
+  # Not the root pool, so it needs to be told to import at boot -
+  # otherwise /mnt/storage would come up empty until you `zpool
+  # import` it by hand.
+  boot.zfs.extraPools = ["storage"];
 
   # aquarius's key from uranus - lets you SSH in from uranus without a
   # password, and means root access survives a reinstall without
