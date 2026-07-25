@@ -29,6 +29,15 @@
   # otherwise /mnt/storage would come up empty until you `zpool
   # import` it by hand.
   boot.zfs.extraPools = ["storage"];
+  # Only root import is a data-loss risk; root's on plain ext4 here.
+  boot.zfs.forceImportRoot = false;
+  # This is what caused the boot failure: the running kernel had no
+  # matching ZFS module built for it (ZFS wasn't requested until this
+  # change), so `modprobe zfs` failed after activating without a
+  # reboot. Pinning to whatever kernel line the ZFS package in this
+  # nixpkgs revision actually supports fixes it now and keeps it from
+  # recurring as nixpkgs updates over time.
+  boot.kernelPackages = config.boot.zfs.package.latestCompatibleLinuxPackages;
 
   # aquarius's key from uranus - lets you SSH in from uranus without a
   # password, and means root access survives a reinstall without
