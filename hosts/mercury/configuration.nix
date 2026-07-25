@@ -38,6 +38,7 @@
   # nixpkgs revision actually supports fixes it now and keeps it from
   # recurring as nixpkgs updates over time.
   boot.kernelPackages = pkgs.linuxPackages;
+  boot.kernelModules = [ "zfs" ];
 
   # aquarius's key from uranus - lets you SSH in from uranus without a
   # password, and means root access survives a reinstall without
