@@ -23,7 +23,7 @@
   # ZFS support for the storage-pool.nix RAIDZ2 pool. hostId just
   # needs to be unique among any ZFS hosts on the same network - not
   # secret, doesn't need to match anything.
-  boot.supportedFilesystems = ["zfs"];
+  boot.supportedFilesystems = ["zfs" "fat32" "exfat"];
   networking.hostId = "6d778fb4";
   # Not the root pool, so it needs to be told to import at boot -
   # otherwise /mnt/storage would come up empty until you `zpool
@@ -39,6 +39,7 @@
   # recurring as nixpkgs updates over time.
   boot.kernelPackages = pkgs.linuxPackages;
   boot.kernelModules = [ "zfs" ];
+  boot.extraModulePackages = [ config.boot.kernelPackages.zfs_2_4 ];
 
   # aquarius's key from uranus - lets you SSH in from uranus without a
   # password, and means root access survives a reinstall without
