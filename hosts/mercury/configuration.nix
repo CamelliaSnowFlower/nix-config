@@ -19,6 +19,16 @@
 
   networking.hostName = "mercury"; # Define your hostname.
 
+  # aquarius's key from uranus - lets you SSH in from uranus without a
+  # password, and means root access survives a reinstall without
+  # needing the USB-recovery dance again.
+  users.users.gemini.openssh.authorizedKeys.keys = [
+    "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIJmwLjawHnMhm7IT+6PegvciSDAmEtinztsMYhhw7uyB camelliasnowflower@gmail.com"
+  ];
+  users.users.root.openssh.authorizedKeys.keys = [
+    "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIJmwLjawHnMhm7IT+6PegvciSDAmEtinztsMYhhw7uyB camelliasnowflower@gmail.com"
+  ];
+
   # Define a user account for managing this system.
   users.users.gemini = {
     isNormalUser = true;
