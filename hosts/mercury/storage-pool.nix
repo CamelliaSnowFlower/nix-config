@@ -72,6 +72,7 @@
           data = {
             type = "zfs_fs";
             mountpoint = "/mnt/storage";
+            options.mountpoint = "legacy";
           };
         };
       };

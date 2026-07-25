@@ -25,10 +25,6 @@
   # secret, doesn't need to match anything.
   boot.supportedFilesystems = ["zfs" "fat32" "exfat"];
   networking.hostId = "6d778fb4";
-  # Not the root pool, so it needs to be told to import at boot -
-  # otherwise /mnt/storage would come up empty until you `zpool
-  # import` it by hand.
-  boot.zfs.extraPools = ["storage"];
   # Only root import is a data-loss risk; root's on plain ext4 here.
   boot.zfs.forceImportRoot = false;
   # This is what caused the boot failure: the running kernel had no
