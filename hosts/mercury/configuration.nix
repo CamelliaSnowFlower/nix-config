@@ -25,8 +25,9 @@
   # secret, doesn't need to match anything.
   boot.supportedFilesystems = ["zfs" "fat32" "exfat"];
   networking.hostId = "6d778fb4";
-  # need to turn off zfs auto importing and let disko handle it
-  systemd.services.zfs-mount.enable = false;
+  # allow zfs to handle importing?
+  systemd.services.zfs-mount.enable = true;
+  boot.zfs.extraPools = [ "storage" ];
   # Only root import is a data-loss risk; root's on plain ext4 here.
   boot.zfs.forceImportRoot = false;
   # This is what caused the boot failure: the running kernel had no

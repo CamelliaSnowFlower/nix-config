@@ -72,10 +72,6 @@
           data = {
             type = "zfs_fs";
             mountpoint = "/mnt/storage";
-            # Disables native ZFS auto-mounting logic
-            options.mountpoint = "legacy";
-            # Instructs systemd how to safely mount the legacy target
-            options.mountOptions = [ "nofail" "X-systemd.automount" ];
           };
         };
       };
