@@ -14,9 +14,7 @@
     # before the first build - it doesn't exist yet.
     ./hardware-configuration.nix
     ../common.nix
-    # Pool layout goes here once it's written - not yet, since it
-    # needs the real /dev/disk/by-id paths from the actual machine.
-    # ./disko.nix
+    ./disko.nix
   ];
 
   networking.hostName = "mercury"; # Define your hostname.
