@@ -15,7 +15,7 @@
     ./hardware-configuration.nix
     ../common.nix
     ./disko.nix
-    ./storage-pool.nix
+  #./storage-pool.nix
   ];
 
   networking.hostName = "mercury"; # Define your hostname.
