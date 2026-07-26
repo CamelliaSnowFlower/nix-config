@@ -39,7 +39,7 @@
   # reboot. Pinning to whatever kernel line the ZFS package in this
   # nixpkgs revision actually supports fixes it now and keeps it from
   # recurring as nixpkgs updates over time.
- boot.kernelPackages = pkgs.linuxPackages;
+  boot.kernelPackages = pkgs.linuxPackages;
  
 
   # aquarius's key from uranus - lets you SSH in from uranus without a
@@ -59,6 +59,21 @@
     extraGroups = ["networkmanager" "wheel"];
     packages = with pkgs; [
     ];
+  };
+
+  # Samba-access-only accounts - no wheel/sudo, no SSH keys set, so
+  # there's no real login capability, just file-share access once a
+  # Samba password is set for each (via `smbpasswd -a <user>`, run
+  # directly on mercury - separate from any Linux password).
+  users.users.aquarius = {
+    isNormalUser = true;
+    description = "AJ";
+    extraGroups = ["users"];
+  };
+  users.users.gubby = {
+    isNormalUser = true;
+    description = "Gubby";
+    extraGroups = ["users"];
   };
 
   # Headless server - manage this over SSH.
