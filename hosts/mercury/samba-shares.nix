@@ -50,12 +50,24 @@
 
       # 4. Network Share for STL/3MF 3D print models
       "Shop-3DModels" = {
-        "path" = "/mnt/storage/shop-3dmodels";
+        "path" = "/mnt/storage/shop-3d"; 
+        # Fixed to match your ZFS dataset path
         "browseable" = "yes";
         "read only" = "no";
         "guest ok" = "no";
         "create mask" = "0644";
         "directory mask" = "0755";
+        "force group" = "users";
+      };
+
+      # NEW: 5. Network Share for accounting, spreadsheets, and business receipts
+      "Shop-Accounting" = {
+        "path" = "/mnt/storage/shop-accounting";
+        "browseable" = "yes";
+        "read only" = "no";
+        "guest ok" = "no";
+        "create mask" = "0600";    # Restricts file access purely to the creator
+        "directory mask" = "0700"; # Restricts folder exploration for privacy
         "force group" = "users";
       };
     };

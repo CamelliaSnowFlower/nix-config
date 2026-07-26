@@ -1,13 +1,5 @@
-# The six bulk 2TB drives, as one RAIDZ2 pool - survives any two
-# drives failing at once. ~8TB usable (4 drives' worth of capacity,
-# 2 drives' worth spent on parity).
-#
-# Deliberately kept out of disko.nix (the boot drive) and out of
-# configuration.nix's disko-related imports for the provisioning step
-# specifically - this file gets handed to disko standalone, by path,
-# so there's no way the one-time format/mount run can reach the
-# already-installed boot drive.
-{
+{ pkgs, ... }: {
+
   disko.devices = {
     disk = {
       storage1 = {
@@ -68,7 +60,7 @@
           compression = "lz4";
           "com.sun:auto-snapshot" = "false";
         };
-         datasets = {
+        datasets = {
           # 1. 2D Vector Designs (.svg, templates, text layouts)
           "shop-designs" = {
             type = "zfs_fs";
@@ -76,7 +68,7 @@
             options = {
               compression = "zstd";
               recordsize = "128k";
-              "com.sun:auto-snapshot" = "true"; # Highly recommended to back these up
+              "com.sun:auto-snapshot" = "true";
             };
           };
 
@@ -86,7 +78,7 @@
             mountpoint = "/mnt/storage/shop-assets";
             options = {
               compression = "lz4"; 
-              recordsize = "1M"; # Optimizes hard drives for fast image loading
+              recordsize = "1M";
               "com.sun:auto-snapshot" = "true";
             };
           };
@@ -96,12 +88,58 @@
             type = "zfs_fs";
             mountpoint = "/mnt/storage/shop-3d";
             options = {
-              compression = "zstd"; # Squeezes down massive uncompressed STL files
-              recordsize = "512k";  # Clean sweet-spot for 3D model streams
-              "com.sun:auto-snapshot" = "false"; # Lower priority for snapshots
+              compression = "zstd";
+              recordsize = "512k";
+              "com.sun:auto-snapshot" = "false";
+            };
+          };
+
+          # NEW: 4. Shop Accounting (Invoices, taxes, spreadsheets, PDFs)
+          "shop-accounting" = {
+            type = "zfs_fs";
+            mountpoint = "/mnt/storage/shop-accounting";
+            options = {
+              compression = "zstd"; # Drastically shrinks text/spreadsheet files
+              recordsize = "128k";  # Standard responsive file access layout
+              "com.sun:auto-snapshot" = "true";
+            };
           };
         };
       };
     };
   };
+
+  # Automated ZFS Snapshot Policy via Sanoid
+  services.sanoid = {
+    enable = true;
+    
+    templates = {
+      # Heavy protection for active artwork templates and business data
+      production-critical = {
+        hourly = 24;      # Keep every hour for the last 1 day
+        daily = 14;       # Keep every day for the last 2 weeks
+        monthly = 3;      # Keep every month for the last quarter
+        autoprune = true;
+        autosnap = true;
+      };
+      
+      # Lighter rules for bulky 3D models to save disk space
+      bulky-assets = {
+        hourly = 0;       # Skip hourly captures
+        daily = 7;        # Keep daily versions for 1 week
+        monthly = 1;      # Keep 1 monthly fallback
+        autoprune = true;
+        autosnap = true;
+      };
+    };
+
+    # Apply the policies directly to your ZFS datasets
+    datasets = {
+      "storage/shop-designs"    = { useTemplate = [ "production-critical" ]; };
+      "storage/shop-assets"     = { useTemplate = [ "production-critical" ]; };
+      "storage/shop-accounting" = { useTemplate = [ "production-critical" ]; }; # Protected
+      "storage/shop-3d"         = { useTemplate = [ "bulky-assets" ]; };
+    };
+  };
 }
+
