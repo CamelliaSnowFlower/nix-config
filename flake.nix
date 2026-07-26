@@ -130,6 +130,7 @@
         specialArgs = {inherit inputs outputs;};
         modules = [
           inputs.disko.nixosModules.disko
+          inputs.disko-zfs.nixosModules.default
           # > Our main nixos configuration file <
           ./hosts/mercury/configuration.nix
         ];

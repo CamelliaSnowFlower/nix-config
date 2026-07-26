@@ -1,0 +1,56 @@
+# Dataset creation/management for the storage pool. Unlike plain
+# disko's own dataset schema (storage-pool.nix), disko-zfs actually
+# runs `zfs create`/`zfs set` for these during an ordinary
+# `nixos-rebuild switch` - that's the whole reason it exists, and why
+# these moved here instead of staying under disko.devices.
+#
+# Before a real switch, preview exactly what it's about to do:
+#   sudo nixos-rebuild --flake .#mercury --sudo dry-activate
+{
+  disko.zfs = {
+    enable = true;
+    settings = {
+      datasets = {
+        # 1. 2D Vector Designs (.svg, templates, text layouts)
+        "storage/shop-designs" = {
+          properties = {
+            mountpoint = "/mnt/storage/shop-designs";
+            compression = "zstd";
+            recordsize = "128k";
+            "com.sun:auto-snapshot" = "true";
+          };
+        };
+
+        # 2. Large Raw Images (.png, background textures, rasters)
+        "storage/shop-assets" = {
+          properties = {
+            mountpoint = "/mnt/storage/shop-assets";
+            compression = "lz4";
+            recordsize = "1M";
+            "com.sun:auto-snapshot" = "true";
+          };
+        };
+
+        # 3. 3D Print Meshes (.stl, .3mf, and slicer profiles)
+        "storage/shop-3d" = {
+          properties = {
+            mountpoint = "/mnt/storage/shop-3d";
+            compression = "zstd";
+            recordsize = "512k";
+            "com.sun:auto-snapshot" = "false";
+          };
+        };
+
+        # 4. Shop Accounting (Invoices, taxes, spreadsheets, PDFs)
+        "storage/shop-accounting" = {
+          properties = {
+            mountpoint = "/mnt/storage/shop-accounting";
+            compression = "zstd"; # Drastically shrinks text/spreadsheet files
+            recordsize = "128k"; # Standard responsive file access layout
+            "com.sun:auto-snapshot" = "true";
+          };
+        };
+      };
+    };
+  };
+}

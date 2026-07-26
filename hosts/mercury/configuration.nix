@@ -16,6 +16,8 @@
     ../common.nix
     ./disko.nix
     ./storage-pool.nix
+    ./disko-zfs.nix
+    ./sanoid.nix
     ./samba-shares.nix
   ];
 
@@ -24,7 +26,7 @@
   # ZFS support for the storage-pool.nix RAIDZ2 pool. hostId just
   # needs to be unique among any ZFS hosts on the same network - not
   # secret, doesn't need to match anything.
-  boot.supportedFilesystems = ["zfs" "fat32" "exfat"];
+  boot.supportedFilesystems = ["zfs" "vfat" "exfat"];
   networking.hostId = "6d778fb4";
   # allow zfs to handle importing?
   systemd.services.zfs-mount.enable = true;
@@ -37,7 +39,7 @@
   # reboot. Pinning to whatever kernel line the ZFS package in this
   # nixpkgs revision actually supports fixes it now and keeps it from
   # recurring as nixpkgs updates over time.
-  boot.kernelPackages = pkgs.linuxPackages;
+ boot.kernelPackages = pkgs.linuxPackages;
  
 
   # aquarius's key from uranus - lets you SSH in from uranus without a
