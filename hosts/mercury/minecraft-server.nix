@@ -18,9 +18,15 @@
     # user) means that folder is just a normal part of your home dir:
     # readable/writable without touching permissions, so you can drop
     # your old world in and upgrade it yourself.
+    #
+    # Group is "users", not "gemini" - isNormalUser on NixOS sets a
+    # user's primary group to "users" by default, it does NOT create
+    # a same-named group the way most distros do. "gemini" the group
+    # doesn't exist, which is exactly why this failed (systemd exit
+    # 216/GROUP = it couldn't resolve the configured Group=).
     dataDir = "/home/gemini/minecraft-servers";
     user = "gemini";
-    group = "gemini";
+    group = "users";
 
     servers.sticker-shop = {
       enable = true;
