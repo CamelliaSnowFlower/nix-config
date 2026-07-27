@@ -10,7 +10,6 @@ in {
     home.packages = with pkgs.unstable; [
       ani-cli
       vesktop
-      discordo
     ];
   };
 }
