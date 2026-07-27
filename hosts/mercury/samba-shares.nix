@@ -101,5 +101,35 @@
     enable = true;
     openFirewall = true;
   };
+
+  # 3. Fix dataset mountpoint ownership/permissions on every boot.
+  #
+  # disko-zfs creates new datasets as root:root 0755 - Samba's "force
+  # group"/"force create mode"/"force directory mode" only apply to
+  # files and folders Samba itself creates *inside* a share, never
+  # retroactively to the share's own root directory. Without this,
+  # any collaborative share (new or freshly recreated) starts out
+  # unwritable by gubby/aquarius even though everything created
+  # underneath it would inherit the right permissions.
+  #
+  # 2775 = group-writable + setgid, so anything created directly at
+  # the dataset root also inherits the "users" group.
+  systemd.tmpfiles.rules = [
+    "z /mnt/storage/shop-designs 2775 root users - -"
+    "z /mnt/storage/shop-assets 2775 root users - -"
+    "z /mnt/storage/shop-3d 2775 root users - -"
+    "z /mnt/storage/shop-videos 2775 root users - -"
+    # Shop-Accounting deliberately excluded - stays root-owned/private.
+  ];
+
+  # tmpfiles normally runs early in boot, before the ZFS pool is
+  # mounted - without this ordering it'd either fail (path doesn't
+  # exist yet) or silently set permissions on a directory that gets
+  # unmounted-over a moment later. Run it only after zfs-mount.service
+  # (enabled in configuration.nix) has done its job.
+  systemd.services.systemd-tmpfiles-setup = {
+    after = [ "zfs-mount.service" ];
+    wants = [ "zfs-mount.service" ];
+  };
 }
 
