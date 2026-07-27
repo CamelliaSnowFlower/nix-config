@@ -12,6 +12,7 @@
     ../common
     ../optional
     ./stylix
+    ./ghostty.nix
   ];
 
   nixpkgs = {
