@@ -22,6 +22,17 @@
 #         style = "dark";
 #       };
 
+        # nvf doesn't set indent defaults on its own - without this,
+        # Neovim's own defaults (tabstop=8, expandtab=false) kick in,
+        # so <Tab> was inserting a literal tab character 8 columns wide.
+        options = {
+          expandtab = true;
+          tabstop = 2;
+          shiftwidth = 2;
+          softtabstop = 2;
+          smartindent = true;
+        };
+
         spellcheck.enable = true;
         # mini text editing
         mini.ai.enable = true;
@@ -37,6 +48,10 @@
         mini.statusline.enable = true;
         mini.tabline.enable = true;
         mini.starter.enable = true;
+
+        autopairs.nvim-autopairs.enable = true;
+        git.gitsigns.enable = true;
+        visuals.indent-blankline.enable = true;
 
         mini.starter.setupOpts = {
           header = "Lets Code AJ";
@@ -54,7 +69,12 @@
           cheatsheet.enable = true;
         };
 
-        lsp.enable = true;
+        lsp = {
+          enable = true;
+          formatOnSave = true;
+          lspkind.enable = true;
+          trouble.enable = true;
+        };
         languages = {
           enableTreesitter = true;
           enableFormat = true;
