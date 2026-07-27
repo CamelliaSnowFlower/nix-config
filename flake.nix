@@ -52,6 +52,13 @@
       url = "github:nix-community/nixos-anywhere";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+
+    # Declarative Minecraft server packages/module, for mercury's
+    # server.
+    nix-minecraft = {
+      url = "github:Infinidoge/nix-minecraft";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
   outputs = {
@@ -131,6 +138,8 @@
         modules = [
           inputs.disko.nixosModules.disko
           inputs.disko-zfs.nixosModules.default
+          inputs.nix-minecraft.nixosModules.minecraft-servers
+          {nixpkgs.overlays = [inputs.nix-minecraft.overlay];}
           # > Our main nixos configuration file <
           ./hosts/mercury/configuration.nix
         ];

@@ -19,6 +19,7 @@
     ./disko-zfs.nix
     ./sanoid.nix
     ./samba-shares.nix
+    ./minecraft-server.nix
   ];
 
   networking.hostName = "mercury"; # Define your hostname.
