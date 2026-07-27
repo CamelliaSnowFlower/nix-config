@@ -1,8 +1,16 @@
 {
+  config,
   lib,
   pkgs,
   ...
-}: {
+}: let
+  # Stylix's own computed colors (see ~/.config/stylix/palette.html
+  # for the full swatch set). base09 is "orange" and base08 is "red"
+  # by base16 convention, so pulling straight from these keeps the
+  # torchlight accents an exact match to the generated palette
+  # instead of a hand-picked guess.
+  colors = config.lib.stylix.colors.withHashtag;
+in {
   programs.ghostty = {
     enable = true;
     package = pkgs.ghostty;
@@ -21,8 +29,8 @@
       # character underneath dark enough to still read clearly.
       cursor-style = "block";
       cursor-style-blink = true;
-      cursor-color = "#ff9e3f";
-      cursor-text = "#1a1006";
+      cursor-color = colors.base09;
+      cursor-text = colors.base00;
 
       # Depth and coziness - a bit see-through and softened, like a
       # lit-up room in a dark cave rather than a flat block of color.
@@ -33,11 +41,11 @@
       window-padding-x = 12;
       window-padding-y = 12;
 
-      # Nudge yellow/red palette slots warmer (amber/ember) without
-      # overriding the rest of Stylix's base16 scheme.
+      # Yellow/red ANSI slots pulled straight from Stylix's own
+      # warning/red colors, rather than separately guessed hex.
       palette = [
-        "3=#e8a33d"
-        "1=#c25c3f"
+        "3=${colors.base0A}"
+        "1=${colors.base08}"
       ];
 
       # Keep things legible even with a moody/dim theme.
