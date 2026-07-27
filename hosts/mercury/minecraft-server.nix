@@ -12,6 +12,16 @@
     # are accepting Mojang's EULA (https://aka.ms/MinecraftEULA).
     eula = true;
 
+    # Puts each server's files at ${dataDir}/<name> - here, that's
+    # /home/gemini/minecraft-servers/sticker-shop. Running the service
+    # as gemini (instead of the module's default "minecraft" system
+    # user) means that folder is just a normal part of your home dir:
+    # readable/writable without touching permissions, so you can drop
+    # your old world in and upgrade it yourself.
+    dataDir = "/home/gemini/minecraft-servers";
+    user = "gemini";
+    group = "gemini";
+
     servers.sticker-shop = {
       enable = true;
       openFirewall = true;
