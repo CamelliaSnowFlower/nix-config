@@ -50,6 +50,23 @@
             "com.sun:auto-snapshot" = "true";
           };
         };
+
+        # 5. Shop Videos (vlogs and other video content)
+        "storage/shop-videos" = {
+          properties = {
+            mountpoint = "/mnt/storage/shop-videos";
+            # Video is already compressed (h264/h265/etc), so zstd
+            # would just burn CPU for little to no space savings -
+            # lz4 is cheap and still catches any incompressible-data
+            # edge cases. Large recordsize matches the big sequential
+            # reads/writes of video files, same as shop-assets.
+            compression = "lz4";
+            recordsize = "1M";
+            # Bulky and easy to re-export/re-upload if lost - skip
+            # snapshotting the space, same call as shop-3d.
+            "com.sun:auto-snapshot" = "false";
+          };
+        };
       };
     };
   };

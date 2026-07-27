@@ -32,6 +32,7 @@
       "storage/shop-assets" = {useTemplate = ["production-critical"];};
       "storage/shop-accounting" = {useTemplate = ["production-critical"];}; # Protected
       "storage/shop-3d" = {useTemplate = ["bulky-assets"];};
+      "storage/shop-videos" = {useTemplate = ["bulky-assets"];};
     };
   };
 }

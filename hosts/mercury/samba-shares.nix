@@ -70,7 +70,20 @@
         "force group" = "users";
       };
 
-      # NEW: 5. Network Share for accounting, spreadsheets, and business receipts
+      # 5. Network Share for vlogs and other video content
+      "Shop-Videos" = {
+        "path" = "/mnt/storage/shop-videos";
+        "browseable" = "yes";
+        "read only" = "no";
+        "guest ok" = "no";
+        "create mask" = "0664";
+        "force create mode" = "0664";
+        "directory mask" = "0775";
+        "force directory mode" = "0775";
+        "force group" = "users";
+      };
+
+      # NEW: 6. Network Share for accounting, spreadsheets, and business receipts
       "Shop-Accounting" = {
         "path" = "/mnt/storage/shop-accounting";
         "browseable" = "yes";
