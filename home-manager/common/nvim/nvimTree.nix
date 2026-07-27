@@ -23,7 +23,7 @@
         signcolumn = "no";
         width = {
           min = 20;
-          max = -1;
+          max = 30;
           padding = 1;
         };
       };
