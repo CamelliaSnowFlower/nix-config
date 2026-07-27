@@ -32,8 +32,14 @@
         "browseable" = "yes";
         "read only" = "no";
         "guest ok" = "no";
-        "create mask" = "0644";
-        "directory mask" = "0755";
+        # 0644/0755 only gave the uploading owner write access; the
+        # shared 'users' group could read but not edit. Bumped to
+        # give the group write too, and "force *" enforces it
+        # regardless of each client's umask.
+        "create mask" = "0664";
+        "force create mode" = "0664";
+        "directory mask" = "0775";
+        "force directory mode" = "0775";
         "force group" = "users";
       };
 
@@ -43,8 +49,10 @@
         "browseable" = "yes";
         "read only" = "no";
         "guest ok" = "no";
-        "create mask" = "0644";
-        "directory mask" = "0755";
+        "create mask" = "0664";
+        "force create mode" = "0664";
+        "directory mask" = "0775";
+        "force directory mode" = "0775";
         "force group" = "users";
       };
 
@@ -55,8 +63,10 @@
         "browseable" = "yes";
         "read only" = "no";
         "guest ok" = "no";
-        "create mask" = "0644";
-        "directory mask" = "0755";
+        "create mask" = "0664";
+        "force create mode" = "0664";
+        "directory mask" = "0775";
+        "force directory mode" = "0775";
         "force group" = "users";
       };
 
