@@ -13,18 +13,25 @@
     eula = true;
 
     # Puts each server's files at ${dataDir}/<name> - here, that's
-    # /home/gemini/minecraft-servers/sticker-shop. Running the service
-    # as gemini (instead of the module's default "minecraft" system
-    # user) means that folder is just a normal part of your home dir:
-    # readable/writable without touching permissions, so you can drop
-    # your old world in and upgrade it yourself.
+    # /srv/minecraft-servers/sticker-shop.
+    #
+    # NOT under /home/gemini: the module hard-codes ProtectHome=true
+    # in its systemd hardening for every server, which makes /home
+    # invisible to the sandboxed process regardless of file ownership.
+    # A dataDir under /home would never actually be reachable by the
+    # running server. /srv keeps that hardening intact.
+    #
+    # Still running as gemini (instead of the module's default
+    # "minecraft" system user), so the sticker-shop subfolder still
+    # ends up owned by gemini - readable/writable without sudo, same
+    # as if it lived in your home dir, just rooted elsewhere.
     #
     # Group is "users", not "gemini" - isNormalUser on NixOS sets a
     # user's primary group to "users" by default, it does NOT create
     # a same-named group the way most distros do. "gemini" the group
     # doesn't exist, which is exactly why this failed (systemd exit
     # 216/GROUP = it couldn't resolve the configured Group=).
-    dataDir = "/home/gemini/minecraft-servers";
+    dataDir = "/srv/minecraft-servers";
     user = "gemini";
     group = "users";
 
