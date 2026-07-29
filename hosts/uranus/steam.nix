@@ -16,10 +16,11 @@
     protonup-ng
     mangohud
     prismlauncher
-    # for prismlauncher 
+    # for prismlauncher
     zulu17
     zulu25 #vulkan minecraft
     extest
+    slipstream
   ];
 
   environment.sessionVariables = {
