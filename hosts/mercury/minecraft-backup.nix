@@ -52,11 +52,16 @@
       echo "Backup written to $dest"
 
       # Prune down to the newest ${toString keepBackups} backups.
-      cd "${backupRoot}"
-      ls -1t | tail -n "+$(( ${toString keepBackups} + 1 ))" | while read -r old; do
-        echo "Pruning old backup: $old"
-        rm -rf -- "$old"
-      done
+      # Timestamped names sort correctly as plain strings (ISO-like
+      # ordering), so a reverse sort of directory names is enough -
+      # no need to touch mtimes.
+      mapfile -t backups < <(find "${backupRoot}" -mindepth 1 -maxdepth 1 -type d -printf '%f\n' | sort -r)
+      if (( ''${#backups[@]} > ${toString keepBackups} )); then
+        for old in "''${backups[@]:${toString keepBackups}}"; do
+          echo "Pruning old backup: $old"
+          rm -rf -- "${backupRoot}/$old"
+        done
+      fi
     '';
   };
 in {
