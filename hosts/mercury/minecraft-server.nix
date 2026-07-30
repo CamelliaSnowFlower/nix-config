@@ -64,5 +64,5 @@
       whitelist = {};
     };
   };
-  enviroment.systemPackages = [pkgs.tmux];
+  environment.systemPackages = [pkgs.tmux];
 }
