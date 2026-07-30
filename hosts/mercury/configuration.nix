@@ -20,6 +20,7 @@
     ./sanoid.nix
     ./samba-shares.nix
     ./minecraft-server.nix
+    ./minecraft-backup.nix
   ];
 
   networking.hostName = "mercury"; # Define your hostname.

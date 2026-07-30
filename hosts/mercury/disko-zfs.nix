@@ -67,6 +67,21 @@
             "com.sun:auto-snapshot" = "false";
           };
         };
+
+        # 6. Minecraft server backups (not exposed over Samba)
+        "storage/minecraft-backups" = {
+          properties = {
+            mountpoint = "/mnt/storage/minecraft-backups";
+            # World saves aren't pre-compressed like video/images, so
+            # zstd earns its keep here.
+            compression = "zstd";
+            recordsize = "128k";
+            # The backup script itself keeps a rolling window of past
+            # backups (see minecraft-backup.nix) - ZFS snapshotting on
+            # top of that would just be redundant versioning.
+            "com.sun:auto-snapshot" = "false";
+          };
+        };
       };
     };
   };
