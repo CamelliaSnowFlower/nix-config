@@ -1,10 +1,8 @@
-# minecraft-server.nix
-#
-# Vanilla Minecraft 26.2 ("Chaos Cubed") server via nix-minecraft.
-# The module/overlay itself are wired up at the flake level (see
-# flake.nix's mercury nixosSystem) since they need to attach before
-# this file's pkgs.minecraftServers reference resolves.
-{ config, pkgs, ... }: {
+{
+  config,
+  pkgs,
+  ...
+}: {
   services.minecraft-servers = {
     enable = true;
 
@@ -66,5 +64,5 @@
       whitelist = {};
     };
   };
+  enviroment.systemPackages = [pkgs.tmux];
 }
-
