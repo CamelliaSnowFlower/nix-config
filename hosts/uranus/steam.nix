@@ -22,6 +22,7 @@
     extest
     slipstream
     r2modman
+    archipelago
   ];
 
   environment.sessionVariables = {
