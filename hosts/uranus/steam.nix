@@ -21,6 +21,8 @@
     zulu25 #vulkan minecraft
     extest
     slipstream
+    2
+    rmodman
   ];
 
   environment.sessionVariables = {
