@@ -15,6 +15,7 @@ in {
       usbimager
       spotify-cli-linux
       pokemonsay
+      zotero
     ];
   };
 }
