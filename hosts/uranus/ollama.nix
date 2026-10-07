@@ -24,6 +24,7 @@
   # Real folder on the SSD, exposed at a path the sandboxed service can reach.
   fileSystems."/var/lib/ollama-models" = {
     device = "/home/aquarius/Media/SOLID/ollama-models";
+    fsType = "none";
     options = ["bind" "nofail"];
   };
 
