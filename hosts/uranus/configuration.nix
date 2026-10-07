@@ -18,6 +18,7 @@
     ./3D.nix
     ./scripts.nix
     ./windows-vm.nix
+    ./odysseus.nix
   ];
 
   networking.hostName = "uranus"; # Define your hostname.
