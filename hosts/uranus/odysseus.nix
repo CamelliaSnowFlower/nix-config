@@ -10,6 +10,13 @@
   services.odysseus = {
     enable = true;
 
+    # Run as your own user so the container can read and edit your files.
+    uid = 1000;
+    gid = 100;
+    createUser = false;
+
+    # Host folder the container sees as /workspace.
+    workspaceDir = "/home/aquarius/Odysseus";
     # Pin an immutable tag once you've picked a build that works; `latest`
     # moves on every push to upstream's main branch. Tags are listed at
     # https://github.com/odysseus-dev/odysseus/pkgs/container/odysseus

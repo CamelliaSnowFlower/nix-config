@@ -67,6 +67,10 @@
   };
 
   secretFile = "${cfg.dataDir}/searxng-secret.env";
+
+  # Numeric so it also works when createUser is off and uid/gid belong to an
+  # account defined elsewhere.
+  owner = "${toString cfg.uid} ${toString cfg.gid}";
 in {
   options.services.odysseus = {
     enable = mkEnableOption "Odysseus, a self-hosted AI workspace";
@@ -122,6 +126,28 @@ in {
       type = types.int;
       default = 3500;
       description = "GID of the `odysseus` group the app drops to inside the container.";
+    };
+
+    createUser = mkOption {
+      type = types.bool;
+      default = true;
+      description = ''
+        Create a dedicated `odysseus` user/group with the uid/gid above. Turn
+        this off if you set uid/gid to an existing account instead, e.g. your
+        own, so files in `workspaceDir` are owned by you.
+      '';
+    };
+
+    workspaceDir = mkOption {
+      type = types.nullOr types.path;
+      default = null;
+      example = "/home/alice/Odysseus";
+      description = ''
+        Host folder mounted into the container at /workspace, for the agent
+        and file tools to read and write. Without this, the container only
+        sees its own filesystem, never your files. The folder is created if
+        missing and owned by `uid`/`gid`.
+      '';
     };
 
     allowedOrigins = mkOption {
@@ -184,25 +210,30 @@ in {
     # This module only knows how to talk to podman.
     virtualisation.oci-containers.backend = mkDefault "podman";
 
-    users.groups.odysseus.gid = cfg.gid;
-    users.users.odysseus = {
-      isSystemUser = true;
-      uid = cfg.uid;
-      group = "odysseus";
-      description = "Odysseus AI workspace";
+    users.groups = mkIf cfg.createUser {
+      odysseus.gid = cfg.gid;
+    };
+    users.users = mkIf cfg.createUser {
+      odysseus = {
+        isSystemUser = true;
+        uid = cfg.uid;
+        group = "odysseus";
+        description = "Odysseus AI workspace";
+      };
     };
 
     systemd.tmpfiles.rules =
       [
         "d ${cfg.dataDir} 0755 root root -"
-        "d ${cfg.dataDir}/data 0750 odysseus odysseus -"
-        "d ${cfg.dataDir}/logs 0750 odysseus odysseus -"
-        "d ${cfg.dataDir}/data/ssh 0700 odysseus odysseus -"
-        "d ${cfg.dataDir}/data/huggingface 0750 odysseus odysseus -"
-        "d ${cfg.dataDir}/data/local 0750 odysseus odysseus -"
+        "d ${cfg.dataDir}/data 0750 ${owner} -"
+        "d ${cfg.dataDir}/logs 0750 ${owner} -"
+        "d ${cfg.dataDir}/data/ssh 0700 ${owner} -"
+        "d ${cfg.dataDir}/data/huggingface 0750 ${owner} -"
+        "d ${cfg.dataDir}/data/local 0750 ${owner} -"
         "d ${cfg.dataDir}/chromadb 0755 root root -"
       ]
-      ++ optional cfg.searxng.enable "d ${cfg.dataDir}/searxng 0755 root root -";
+      ++ optional cfg.searxng.enable "d ${cfg.dataDir}/searxng 0755 root root -"
+      ++ optional (cfg.workspaceDir != null) "d ${cfg.workspaceDir} 0755 ${owner} -";
 
     virtualisation.oci-containers.containers =
       {
@@ -219,7 +250,8 @@ in {
             # Cookbook-installed serve engines (vLLM, llama-cpp-python, ...),
             # persisted so recreating the container doesn't wipe them.
             "${cfg.dataDir}/data/local:/app/.local"
-          ];
+          ]
+          ++ optional (cfg.workspaceDir != null) "${cfg.workspaceDir}:/workspace";
           environment =
             {
               PUID = toString cfg.uid;

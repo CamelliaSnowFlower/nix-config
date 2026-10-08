@@ -4,6 +4,10 @@
     package = pkgs.ollama-rocm; # AMD GPU build
     # Must listen beyond loopback, or the Odysseus container can't reach it.
     host = "0.0.0.0";
+    
+    # The RX 6700 XT (gfx1031) isn't officially supported by ROCm; this makes
+    # it use the gfx1030 kernels, which work on it.
+    rocmOverrideGfx = "10.3.0";
 
     # Models live on the SSD (via the bind mount below).
     models = "/var/lib/ollama-models";
