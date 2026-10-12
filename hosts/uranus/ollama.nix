@@ -2,7 +2,7 @@
   services.ollama = {
     enable = true;
     environmentVariables = {
-      OLLAMA_CONTEXT_LENGTH = "32768";
+      OLLAMA_CONTEXT_LENGTH = "49152";
       OLLAMA_KEEP_ALIVE = "24h";
     };
     package = pkgs.ollama-rocm; # AMD GPU build
