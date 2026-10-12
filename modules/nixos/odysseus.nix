@@ -143,8 +143,9 @@ in {
       default = null;
       example = "/home/alice/Odysseus";
       description = ''
-        Host folder mounted into the container at /workspace, for the agent
-        and file tools to read and write. Without this, the container only
+        Host folder mounted over the agent's default workspace inside the
+        container (/app/data/agent_workspace), for the agent and file tools
+        to read and write. Without this, the container only
         sees its own filesystem, never your files. The folder is created if
         missing and owned by `uid`/`gid`.
       '';
@@ -251,7 +252,7 @@ in {
             # persisted so recreating the container doesn't wipe them.
             "${cfg.dataDir}/data/local:/app/.local"
           ]
-          ++ optional (cfg.workspaceDir != null) "${cfg.workspaceDir}:/workspace";
+          ++ optional (cfg.workspaceDir != null) "${cfg.workspaceDir}:/app/data/agent_workspace";
           environment =
             {
               PUID = toString cfg.uid;
