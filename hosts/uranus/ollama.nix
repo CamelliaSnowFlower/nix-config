@@ -1,10 +1,14 @@
 {pkgs, ...}: {
   services.ollama = {
     enable = true;
+    environmentVariables = {
+      OLLAMA_CONTEXT_LENGTH = "32768";
+      OLLAMA_KEEP_ALIVE = "24h";
+    };
     package = pkgs.ollama-rocm; # AMD GPU build
     # Must listen beyond loopback, or the Odysseus container can't reach it.
     host = "0.0.0.0";
-    
+
     # The RX 6700 XT (gfx1031) isn't officially supported by ROCm; this makes
     # it use the gfx1030 kernels, which work on it.
     rocmOverrideGfx = "10.3.0";
