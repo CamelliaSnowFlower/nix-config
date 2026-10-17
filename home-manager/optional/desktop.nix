@@ -12,8 +12,6 @@ in {
       spotify
       gparted
       usbimager
-      spotify-cli-linux
-      pokemonsay
       zotero
     ];
   };

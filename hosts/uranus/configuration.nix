@@ -14,7 +14,7 @@
     #./nvidia.nix
     ./AMD.nix
     ./steam.nix
-    ./obs.nix
+    #./obs.nix
     ./3D.nix
     ./scripts.nix
     ./windows-vm.nix

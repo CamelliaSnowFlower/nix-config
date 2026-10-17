@@ -51,12 +51,6 @@
   # integration. Just mine, not a generic "desktop" persona thing, so
   # kept here rather than in ../optional/desktop.nix.
   home.packages = with pkgs; [
-    (writeShellScriptBin "skip" ''echo "Up Next!" && spotifycli --next && spotifycli --song && echo "by" && spotifycli --artist'')
-    (writeShellScriptBin "rewind" ''echo "Run it Back:" && spotifycli --prev && spotifycli --song && echo "by" && spotifycli --artist'')
-    (writeShellScriptBin "playpause" ''echo ">||" && spotifycli --playpause && spotifycli --song && echo "by" && spotifycli --artist'')
-    (writeShellScriptBin "rwp" ''rewind | pokemonsay'')
-    (writeShellScriptBin "skp" ''skip | pokemonsay'')
-    (writeShellScriptBin "pp" ''playpause | pokemonsay'')
   ];
 
   # Enable home-manager
