@@ -11,21 +11,36 @@
     enable = true;
     settings = {
       datasets = {
-        # 1. 2D Vector Designs (.svg, templates, text layouts)
+        # 1. Design source files (.svg, templates, plus layered working
+        # files: GIMP .xcf, Photoshop .psd/.psb, Illustrator .ai,
+        # InDesign .indd, Affinity, Krita, etc.)
         "storage/shop-designs" = {
           properties = {
             mountpoint = "/mnt/storage/shop-designs";
+            # Layered project files are large and usually compress
+            # well (xcf especially), and small SVG/text files compress
+            # very well, so zstd stays the right call here.
             compression = "zstd";
-            recordsize = "128k";
+            # Bumped from 128k: layered files are tens to hundreds of
+            # MB and get read/written whole. Smaller files just use
+            # smaller blocks (recordsize is a ceiling, not a minimum).
+            # Not 1M, since this dataset is snapshotted hourly and
+            # in-place edits would pin larger blocks in snapshots.
+            recordsize = "512k";
             "com.sun:auto-snapshot" = "true";
           };
         };
 
-        # 2. Large Raw Images (.png, background textures, rasters)
+        # 2. Photos, raster images, and PDFs (.jpg, .heic, .png,
+        # textures, reference PDFs)
         "storage/shop-assets" = {
           properties = {
             mountpoint = "/mnt/storage/shop-assets";
-            compression = "lz4";
+            # Mixed content: PNG/PDF can still shrink a bit, JPEG/HEIC
+            # won't. Recent OpenZFS aborts zstd early on blocks that
+            # turn out to be incompressible, so photos cost almost no
+            # extra CPU while PDFs/PNGs still get squeezed. (Was lz4.)
+            compression = "zstd";
             recordsize = "1M";
             "com.sun:auto-snapshot" = "true";
           };
@@ -79,6 +94,23 @@
             # The backup script itself keeps a rolling window of past
             # backups (see minecraft-backup.nix) - ZFS snapshotting on
             # top of that would just be redundant versioning.
+            "com.sun:auto-snapshot" = "false";
+          };
+        };
+
+        # 7. Outbox: files staged for sharing outside the network via
+        # the rclone -> Google Drive sync (not exposed over Samba).
+        # Disposable copy - the originals live in the shop-* datasets.
+        "storage/outbox" = {
+          properties = {
+            mountpoint = "/mnt/storage/outbox";
+            # Uncompressed by request. Mixed file types, and anything
+            # already compressed would gain nothing anyway.
+            compression = "off";
+            recordsize = "1M";
+            # No snapshots. This dataset is deliberately absent from
+            # sanoid.nix as well - sanoid only snapshots datasets
+            # listed there.
             "com.sun:auto-snapshot" = "false";
           };
         };
