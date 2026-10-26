@@ -20,7 +20,7 @@
     ./windows-vm.nix
     ./odysseus.nix
     ./ollama.nix
-    ./sticker-automation.nix
+    #./sticker-automation.nix
   ];
 
   networking.hostName = "uranus"; # Define your hostname.
