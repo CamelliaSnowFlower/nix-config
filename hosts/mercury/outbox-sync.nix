@@ -9,6 +9,8 @@
 #   - One-way `rclone sync`: Drive can never write back to mercury, and
 #     deleting a file from the outbox removes it from Drive on the next
 #     run (deleted files land in Drive's trash).
+#   - The local .staging directory is excluded so incomplete sticker jobs
+#     are never exposed through Google Drive before approval/commit.
 #   - rclone is limited to the `drive.file` scope, so even if the token
 #     leaks it can only touch files rclone itself created - not the rest
 #     of your Google Drive.
@@ -145,6 +147,9 @@ in {
         outbox
         remote
         "--config ${configFile}"
+        # Sticker jobs stage beneath the outbox share so final renames are
+        # same-filesystem, but unfinished work must never be mirrored to Drive.
+        "--exclude /.staging/**"
         "--max-delete 100"
       ];
 

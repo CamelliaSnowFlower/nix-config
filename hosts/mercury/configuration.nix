@@ -21,6 +21,7 @@
     ./samba-shares.nix
     ./minecraft-server.nix
     ./minecraft-backup.nix
+    ./outbox-sync.nix
   ];
 
   networking.hostName = "mercury"; # Define your hostname.

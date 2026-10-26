@@ -13,6 +13,7 @@
     ../optional
     ./stylix
     ./ghostty.nix
+    ./sticker-notification.nix
   ];
 
   nixpkgs = {
