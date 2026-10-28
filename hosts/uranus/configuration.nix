@@ -21,6 +21,7 @@
     ./odysseus.nix
     ./ollama.nix
     #./sticker-automation.nix
+    ../../modules/claude-code.nix
   ];
 
   networking.hostName = "uranus"; # Define your hostname.
