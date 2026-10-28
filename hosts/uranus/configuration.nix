@@ -21,7 +21,7 @@
     ./odysseus.nix
     ./ollama.nix
     #./sticker-automation.nix
-    ../../modules/claude-code.nix
+    ../../modules/nixos/claude-code.nix
   ];
 
   networking.hostName = "uranus"; # Define your hostname.
@@ -53,6 +53,9 @@
 
   # Enable the OpenSSH daemon.
   services.openssh.enable = true;
+
+  # Enable Claude Code
+  modules.claude-code.enable = true;
 
   # Open ports in the firewall.
   networking.firewall.allowedTCPPorts = [7125];
