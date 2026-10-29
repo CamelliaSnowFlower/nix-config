@@ -2,9 +2,10 @@
 #
 # Mercury's asset shares are mounted beneath assets/, while generated
 # production files and staging are stored in Mercury's Shop-Outbox share.
-# Shop-Outbox is mirrored one-way to Google Drive by Mercury's outbox-sync
-# service; the .staging directory is excluded from that sync. n8n is bound
-# to loopback and can only be reached remotely through Tailscale Serve.
+# Admins pull finished output directly from Shop-Outbox over the LAN or
+# Tailscale (see hosts/mercury/tailscale.nix); it's no longer mirrored to
+# Google Drive - that sync was removed as unreliable. n8n is bound to
+# loopback and can only be reached remotely through Tailscale Serve.
 #
 # The workflow calls one command, `sticker-tool` (see ../../sticker/), which
 # n8n's Execute Command node runs. See STICKER-AUTOMATION.md for the workflow
@@ -26,9 +27,8 @@
     "Shop-Videos"
     "Shop-Accounting"
   ];
-  # Mercury's Google Drive-synced outbox is the production output location.
-  # Keep staging beneath it so commit renames stay on the same SMB filesystem;
-  # outbox-sync.nix excludes .staging from the Google Drive mirror.
+  # Mercury's outbox is the production output location. Keep staging
+  # beneath it so commit renames stay on the same SMB filesystem.
   shares = assetShares ++ ["Shop-Outbox"];
 
   # Shares that must be healthy for sticker automation to run. The mount script

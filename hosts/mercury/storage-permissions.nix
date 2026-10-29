@@ -49,11 +49,19 @@
       mode = "2775";
     }
     {
-      # Shop-Outbox. rclone-sync only needs read access, which 0755 "other"
-      # already gives.
+      # Shop-Outbox: finished-goods output, shared over Samba in
+      # samba-shares.nix (admin-only, reachable over the LAN and Tailscale).
       path = "/mnt/storage/outbox";
       owner = "root";
       group = "users";
+      mode = "2775";
+    }
+    {
+      # Shop-Inbox. Group is "artists", not "users" - artist accounts stay
+      # scoped to this one share (see configuration.nix, samba-shares.nix).
+      path = "/mnt/storage/shop-inbox";
+      owner = "root";
+      group = "artists";
       mode = "2775";
     }
   ];
@@ -92,12 +100,9 @@ in {
     wantedBy = ["multi-user.target"];
     after = ["zfs-mount.service"];
     wants = ["zfs-mount.service"];
-    # Ordering only: Samba and the sync still start if this unit fails, using
-    # the permissions already stored on the datasets.
-    before = [
-      "samba-smbd.service"
-      "outbox-sync.service"
-    ];
+    # Ordering only: Samba still starts if this unit fails, using the
+    # permissions already stored on the datasets.
+    before = ["samba-smbd.service"];
     serviceConfig = {
       Type = "oneshot";
       RemainAfterExit = true;

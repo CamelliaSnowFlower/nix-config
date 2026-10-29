@@ -22,7 +22,7 @@
     ./samba-shares.nix
     ./minecraft-server.nix
     ./minecraft-backup.nix
-    ./outbox-sync.nix
+    ./tailscale.nix
   ];
 
   networking.hostName = "mercury"; # Define your hostname.
@@ -77,6 +77,20 @@
     isNormalUser = true;
     description = "Gubby";
     extraGroups = ["users"];
+  };
+
+  # Samba-access-only accounts for external artists dropping files into
+  # Shop-Inbox over Tailscale (see tailscale.nix and samba-shares.nix).
+  # Deliberately in "artists", not "users" - so they get no access to
+  # Shop-Designs/Assets/3DModels/Videos/Accounting even if "valid
+  # users" on those shares is ever loosened. "artist-example" is a
+  # placeholder: rename it (or add more blocks) per real artist, then
+  # set each one's Samba password with `sudo smbpasswd -a <name>`.
+  users.groups.artists = {};
+  users.users.artist-example = {
+    isNormalUser = true;
+    description = "Example artist - replace with a real account";
+    extraGroups = ["artists"];
   };
 
   # Headless server - manage this over SSH.

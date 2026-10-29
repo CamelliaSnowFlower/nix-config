@@ -33,6 +33,10 @@
       "storage/shop-accounting" = {useTemplate = ["production-critical"];}; # Protected
       "storage/shop-3d" = {useTemplate = ["bulky-assets"];};
       "storage/shop-videos" = {useTemplate = ["bulky-assets"];};
+      # Externally-writable by artists over Tailscale - snapshots are
+      # the recovery path if a submission is accidentally overwritten
+      # or deleted before an admin pulls it.
+      "storage/shop-inbox" = {useTemplate = ["bulky-assets"];};
     };
   };
 }
