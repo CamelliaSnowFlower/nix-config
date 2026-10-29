@@ -241,18 +241,19 @@ in {
         odysseus = {
           image = cfg.image;
           ports = ["${cfg.bindAddress}:${toString cfg.port}:7000"];
-          volumes = [
-            "${cfg.dataDir}/data:/app/data"
-            "${cfg.dataDir}/logs:/app/logs"
-            # Cookbook's remote-server SSH identity.
-            "${cfg.dataDir}/data/ssh:/app/.ssh"
-            # Cookbook's local model cache.
-            "${cfg.dataDir}/data/huggingface:/app/.cache/huggingface"
-            # Cookbook-installed serve engines (vLLM, llama-cpp-python, ...),
-            # persisted so recreating the container doesn't wipe them.
-            "${cfg.dataDir}/data/local:/app/.local"
-          ]
-          ++ optional (cfg.workspaceDir != null) "${cfg.workspaceDir}:/app/data/agent_workspace";
+          volumes =
+            [
+              "${cfg.dataDir}/data:/app/data"
+              "${cfg.dataDir}/logs:/app/logs"
+              # Cookbook's remote-server SSH identity.
+              "${cfg.dataDir}/data/ssh:/app/.ssh"
+              # Cookbook's local model cache.
+              "${cfg.dataDir}/data/huggingface:/app/.cache/huggingface"
+              # Cookbook-installed serve engines (vLLM, llama-cpp-python, ...),
+              # persisted so recreating the container doesn't wipe them.
+              "${cfg.dataDir}/data/local:/app/.local"
+            ]
+            ++ optional (cfg.workspaceDir != null) "${cfg.workspaceDir}:/app/data/agent_workspace";
           environment =
             {
               PUID = toString cfg.uid;

@@ -16,11 +16,11 @@
     settings = {
       vim = {
         vimAlias = true;
-#theme = {
-#         enable = true;
-#         name = "gruvbox";
-#         style = "dark";
-#       };
+        #theme = {
+        #         enable = true;
+        #         name = "gruvbox";
+        #         style = "dark";
+        #       };
 
         # nvf doesn't set indent defaults on its own - without this,
         # Neovim's own defaults (tabstop=8, expandtab=false) kick in,

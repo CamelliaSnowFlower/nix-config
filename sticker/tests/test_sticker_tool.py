@@ -10,6 +10,7 @@ touches real shares, the real outbox, or Google Drive.
 
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -59,17 +60,60 @@ def star_alpha_art(path, size=400):
     image.save(path)
 
 
+def svg_uses(svg_path):
+    """[(copy_id, x, y), ...] as currently written in an editable layout SVG."""
+    text = svg_path.read_text()
+    return [
+        (m.group(1), int(m.group(2)), int(m.group(3)))
+        for m in re.finditer(r'<use id="(copy-\d+)"[^>]*? x="(-?\d+)" y="(-?\d+)"', text)
+    ]
+
+
+def set_svg_use(svg_path, copy_id, *, x=None, y=None, transform=None, data_rotation=None):
+    """Hand-edit one <use> element in place, the way Inkscape's save would."""
+    text = svg_path.read_text()
+    pattern = re.compile(rf'<use id="{copy_id}"[^/]*/>')
+    tag = pattern.search(text).group(0)
+    if x is not None:
+        tag = re.sub(r'x="-?\d+"', f'x="{x}"', tag)
+    if y is not None:
+        tag = re.sub(r'y="-?\d+"', f'y="{y}"', tag)
+    if data_rotation is not None:
+        tag = re.sub(r'data-rotation="-?\d+"', f'data-rotation="{data_rotation}"', tag)
+    if transform is not None:
+        tag = tag.replace("/>", f' transform="{transform}"/>')
+    svg_path.write_text(pattern.sub(tag, text))
+
+
+def remove_svg_use(svg_path, copy_id):
+    text = svg_path.read_text()
+    svg_path.write_text(re.sub(rf'\s*<use id="{copy_id}"[^/]*/>\n?', "", text))
+
+
 class ToolTestCase(unittest.TestCase):
     def setUp(self):
         self.tmp = Path(tempfile.mkdtemp(prefix="sticker-test-"))
         self.outbox = self.tmp / "outbox"
         self.state = self.tmp / "state"
+        self.assets = self.tmp / "assets"
+        # Empty on purpose: without this, Env would fall back to the real
+        # sticker/boundaries/ next to sticker_tool.py, and tests would
+        # silently nest against the production Cricut masks instead of
+        # SMALL_CONFIG's plain margin rectangles.
+        self.boundaries = self.tmp / "boundaries"
         self.outbox.mkdir()
         self.state.mkdir()
+        self.assets.mkdir()
+        self.boundaries.mkdir()
         (self.state / "config.json").write_text(json.dumps(SMALL_CONFIG))
         self.env_patch = mock.patch.dict(
             os.environ,
-            {"STICKER_OUTBOX": str(self.outbox), "STICKER_STATE": str(self.state)},
+            {
+                "STICKER_OUTBOX": str(self.outbox),
+                "STICKER_STATE": str(self.state),
+                "STICKER_ASSETS": str(self.assets),
+                "STICKER_BOUNDARIES": str(self.boundaries),
+            },
         )
         self.env_patch.start()
         self.addCleanup(self.env_patch.stop)
@@ -92,7 +136,7 @@ class ToolTestCase(unittest.TestCase):
         self.assertEqual(code, 2)
         return printed.call_args[0][0] if printed.call_args else ""
 
-    def make_upload(self, exec_id, count=1, size_in=1.0, sheets=("letter",), quantity=None, art="ring"):
+    def make_upload(self, exec_id, count=1, size_in=1.0, sheets=("letter",), quantity=None, art="ring", **extra):
         directory = self.state / "incoming" / str(exec_id)
         self.call("mkincoming", "--exec-id", str(exec_id))
         files = []
@@ -103,7 +147,7 @@ class ToolTestCase(unittest.TestCase):
             else:
                 star_alpha_art(directory / name)
             files.append({"file": name, "original_name": f"customer file {index}; rm -rf / .png"})
-        request = {"size_in": size_in, "sheets": list(sheets), "quantity": quantity, "files": files}
+        request = {"size_in": size_in, "sheets": list(sheets), "quantity": quantity, "files": files, **extra}
         (directory / "request.json").write_text(json.dumps(request))
         return directory
 
@@ -199,6 +243,73 @@ class NamingAndRegistryTests(ToolTestCase):
         self.make_upload(14)
         again = self.call("intake", "--exec-id", "14")
         self.assertEqual(again["listing"], 1)
+
+    def test_a_new_prefix_gets_its_own_product_folder_and_listing_one(self):
+        self.make_upload(15, prefix="XYZ")
+        job = self.call("intake", "--exec-id", "15")
+        self.assertEqual(job["listing"], 1)
+        self.assertEqual(job["skus"], ["XYZ001V001"])
+        self.call("process", "--job", job["job_id"])
+        self.call("nest", "--job", job["job_id"])
+        self.call("commit", "--job", job["job_id"])
+        self.assertTrue((self.outbox / "XYZ000" / "XYZ001V001.png").is_file())
+        # The listings table has one global counter, not one per prefix (see
+        # Registry.reserve): a different prefix still consumes from the same
+        # sequence, so the next ABC job continues from 2, not back to 1.
+        self.make_upload(16)
+        other = self.call("intake", "--exec-id", "16")
+        self.assertEqual(other["listing"], 2)
+
+    def test_adding_a_variation_to_an_existing_listing(self):
+        first = self.full_job(17, count=1)
+        self.call("commit", "--job", first["job_id"])
+        self.make_upload(18, count=2, listing=1)
+        second = self.call("intake", "--exec-id", "18")
+        self.assertEqual(second["listing"], 1)
+        self.assertEqual(second["skus"], ["ABC001V002", "ABC001V003"])
+
+    def test_adding_a_variation_respects_hand_added_files(self):
+        first = self.full_job(19, count=1)
+        self.call("commit", "--job", first["job_id"])
+        (self.outbox / "ABC000" / "ABC001V009.png").write_bytes(b"added by hand")
+        self.make_upload(21, count=1, listing=1)
+        job = self.call("intake", "--exec-id", "21")
+        self.assertEqual(job["skus"], ["ABC001V010"])
+
+    def test_variation_for_unknown_listing_is_rejected(self):
+        self.make_upload(22, listing=5)
+        self.fail("intake", "--exec-id", "22")
+
+    def test_list_products_reads_the_asset_library_not_the_outbox(self):
+        # list-products must not depend on anything sticker-tool has
+        # committed -- only on what's in the (separate) design-asset library,
+        # by folder name alone. A committed job here should not appear.
+        job = self.full_job(23)
+        self.call("commit", "--job", job["job_id"])
+        self.assertEqual(self.call("list-products")["prefixes"], [])
+
+        (self.assets / "DMD000").mkdir()
+        (self.assets / "ACJ000").mkdir()
+        (self.assets / "0_Branding").mkdir()  # does not match <PREFIX>000, ignored
+        (self.assets / "DMD000" / "some original art.psd").write_bytes(b"x")  # file names are not read
+        self.assertEqual(self.call("list-products")["prefixes"], ["ACJ", "DMD"])
+
+    def test_list_listings_reports_only_what_sticker_tool_has_produced(self):
+        (self.assets / "ACJ000").mkdir()
+        self.assertEqual(self.call("list-listings", "--prefix", "ACJ")["listings"], [])
+
+        self.make_upload(24, prefix="ACJ", count=2)
+        job = self.call("intake", "--exec-id", "24")
+        self.call("process", "--job", job["job_id"])
+        self.call("nest", "--job", job["job_id"])
+        self.call("commit", "--job", job["job_id"])
+        self.assertEqual(
+            self.call("list-listings", "--prefix", "ACJ")["listings"],
+            [{"prefix": "ACJ", "listing": 1, "sku_root": "ACJ001", "variations": 2, "next_variation": 3}],
+        )
+
+    def test_list_listings_rejects_a_bad_prefix(self):
+        self.fail("list-listings", "--prefix", "ac")
 
 
 class ProcessingTests(ToolTestCase):
@@ -317,7 +428,9 @@ class CommitAndReprintTests(ToolTestCase):
             "ABC001V001_source.png",
             "ABC001V001_layout.json",
             "ABC001V001_letter.png",
+            "ABC001V001_letter.svg",
             "ABC001V001_tabloid.png",
+            "ABC001V001_tabloid.svg",
         }
         self.assertEqual({p.name for p in prod.iterdir()}, expected)
         self.assertFalse(stage.exists(), "staging must be cleaned up")
@@ -357,7 +470,13 @@ class CommitAndReprintTests(ToolTestCase):
         names = {p.name for p in prod.iterdir()}
         self.assertEqual(
             names,
-            {"ABC001V001.png", "ABC001V001_source.png", "ABC001V001_layout.json", "ABC001V001_letter.png"},
+            {
+                "ABC001V001.png",
+                "ABC001V001_source.png",
+                "ABC001V001_layout.json",
+                "ABC001V001_letter.png",
+                "ABC001V001_letter.svg",
+            },
         )
 
     def test_commit_never_overwrites_existing_files(self):
@@ -378,6 +497,80 @@ class CommitAndReprintTests(ToolTestCase):
         self.fail("reprint", "--sku", "ABC001V001", "--sheet", "letter")
 
 
+class SvgLayoutEditingTests(ToolTestCase):
+    def test_nest_writes_one_use_per_copy(self):
+        job = self.full_job(60)
+        stage = Path(job["staging"])
+        svg_path = stage / "ABC001V001_letter.svg"
+        self.assertTrue(svg_path.is_file())
+        layout = json.loads((stage / "ABC001V001_layout.json").read_text())
+        self.assertEqual(len(svg_uses(svg_path)), layout["sheets"]["letter"]["copies"])
+
+    def test_apply_svg_layout_accepts_a_swap_between_two_valid_positions(self):
+        job = self.full_job(61)
+        stage = Path(job["staging"])
+        svg_path = stage / "ABC001V001_letter.svg"
+        uses = svg_uses(svg_path)
+        self.assertGreaterEqual(len(uses), 2, "need at least two copies to swap")
+        (id_a, x_a, y_a), (id_b, x_b, y_b) = uses[0], uses[1]
+        set_svg_use(svg_path, id_a, x=x_b, y=y_b)
+        set_svg_use(svg_path, id_b, x=x_a, y=y_a)
+        result = self.call("apply-svg-layout", "--job", job["job_id"], "--sku", "ABC001V001", "--sheet", "letter")
+        self.assertEqual(result["copies"], len(uses))
+        layout = json.loads((stage / "ABC001V001_layout.json").read_text())
+        new_positions = sorted((p["x"], p["y"]) for p in layout["sheets"]["letter"]["placements"])
+        old_positions = sorted((x, y) for _, x, y in uses)
+        self.assertEqual(new_positions, old_positions)
+        # The re-written SVG reflects the swap too, not just layout.json.
+        self.assertEqual(sorted((x, y) for _, x, y in svg_uses(svg_path)), old_positions)
+
+    def test_apply_svg_layout_rejects_overlap(self):
+        job = self.full_job(62)
+        stage = Path(job["staging"])
+        svg_path = stage / "ABC001V001_letter.svg"
+        (id_a, x_a, y_a), (id_b, _, _) = svg_uses(svg_path)[:2]
+        set_svg_use(svg_path, id_b, x=x_a, y=y_a)
+        message = self.fail("apply-svg-layout", "--job", job["job_id"], "--sku", "ABC001V001", "--sheet", "letter")
+        self.assertIn("overlap", message)
+
+    def test_apply_svg_layout_rejects_added_or_removed_copies(self):
+        job = self.full_job(63)
+        stage = Path(job["staging"])
+        svg_path = stage / "ABC001V001_letter.svg"
+        remove_svg_use(svg_path, svg_uses(svg_path)[0][0])
+        message = self.fail("apply-svg-layout", "--job", job["job_id"], "--sku", "ABC001V001", "--sheet", "letter")
+        self.assertIn("cannot be added or removed", message)
+
+    def test_apply_svg_layout_rejects_an_unrendered_rotation(self):
+        job = self.full_job(64)
+        stage = Path(job["staging"])
+        svg_path = stage / "ABC001V001_letter.svg"
+        set_svg_use(svg_path, svg_uses(svg_path)[0][0], data_rotation=37)
+        message = self.fail("apply-svg-layout", "--job", job["job_id"], "--sku", "ABC001V001", "--sheet", "letter")
+        self.assertIn("not pre-rendered", message)
+
+    def test_apply_svg_layout_rejects_a_manual_rotation_transform(self):
+        job = self.full_job(65)
+        stage = Path(job["staging"])
+        svg_path = stage / "ABC001V001_letter.svg"
+        set_svg_use(svg_path, svg_uses(svg_path)[0][0], transform="rotate(15)")
+        message = self.fail("apply-svg-layout", "--job", job["job_id"], "--sku", "ABC001V001", "--sheet", "letter")
+        self.assertIn("rotated, scaled, or skewed", message)
+
+    def test_apply_svg_layout_rejects_off_sheet_position(self):
+        job = self.full_job(66)
+        stage = Path(job["staging"])
+        svg_path = stage / "ABC001V001_letter.svg"
+        set_svg_use(svg_path, svg_uses(svg_path)[0][0], x=-5)
+        message = self.fail("apply-svg-layout", "--job", job["job_id"], "--sku", "ABC001V001", "--sheet", "letter")
+        self.assertIn("moved off the sheet", message)
+
+    def test_apply_svg_layout_refuses_once_committed(self):
+        job = self.full_job(67)
+        self.call("commit", "--job", job["job_id"])
+        self.fail("apply-svg-layout", "--job", job["job_id"], "--sku", "ABC001V001", "--sheet", "letter")
+
+
 class SmallCommandTests(ToolTestCase):
     def test_note_approval_validates_the_url(self):
         self.make_upload(50)
@@ -388,6 +581,9 @@ class SmallCommandTests(ToolTestCase):
             "--url", "https://uranus.example.ts.net/form-waiting/123?signature=abc123",
         )
         self.assertTrue(Path(ok["approval_file"]).is_file())
+        latest = json.loads((self.state / "latest-approval.json").read_text())
+        self.assertEqual(latest["job_id"], job["job_id"])
+        self.assertEqual(latest["url"], "https://uranus.example.ts.net/form-waiting/123?signature=abc123")
 
     def test_record_error_sanitises_node_name(self):
         self.call("record-error", "--exec-id", "77", "--node", "bad;name$(x)")
@@ -399,6 +595,49 @@ class SmallCommandTests(ToolTestCase):
 
     def test_bad_job_id_is_rejected(self):
         self.fail("process", "--job", "../../etc")
+
+
+class BoundaryMaskTests(ToolTestCase):
+    """A "mask" sheet config (see load_boundary_mask) replaces the plain
+    margin_in rectangle with an arbitrary printable-area image -- these
+    confirm nest actually respects it, not just a uniform margin.
+    """
+
+    def configure_half_mask(self):
+        # Right half allowed (colored, opaque), left half forbidden (white):
+        # deliberately not a uniform margin, to prove the mask -- not
+        # margin_in -- is what's driving placement.
+        config = dict(SMALL_CONFIG)
+        config["sheets"] = {
+            "letter": {"width_in": 2.0, "height_in": 2.0, "margin_in": 0.1, "mask": "half.png"},
+            "tabloid": SMALL_CONFIG["sheets"]["tabloid"],
+        }
+        (self.state / "config.json").write_text(json.dumps(config))
+        mask = Image.new("RGBA", (20, 20), (255, 255, 255, 255))
+        ImageDraw.Draw(mask).rectangle((10, 0, 19, 19), fill=(255, 0, 255, 255))
+        mask.save(self.boundaries / "half.png")
+        return 300  # px x-coordinate of the allowed/forbidden split at the configured dpi
+
+    def test_nest_avoids_the_forbidden_side_of_a_boundary_mask(self):
+        split = self.configure_half_mask()
+        job = self.full_job(70, size_in=0.5)
+        layout = json.loads((Path(job["staging"]) / "ABC001V001_layout.json").read_text())
+        sheet = layout["sheets"]["letter"]
+        self.assertGreater(sheet["copies"], 0)
+        for place in sheet["placements"]:
+            self.assertGreaterEqual(place["x"], split, place)
+        # fill_percent is against the mask's true printable pixel count, not
+        # the full canvas -- it must not look like the sticker barely covers
+        # the sheet just because half the canvas was never placeable at all.
+        self.assertGreater(sheet["fill_percent"], 5.0)
+
+    def test_apply_svg_layout_rejects_a_move_into_the_forbidden_side(self):
+        self.configure_half_mask()
+        job = self.full_job(71, size_in=0.5)
+        svg_path = Path(job["staging"]) / "ABC001V001_letter.svg"
+        set_svg_use(svg_path, svg_uses(svg_path)[0][0], x=0, y=0)
+        message = self.fail("apply-svg-layout", "--job", job["job_id"], "--sku", "ABC001V001", "--sheet", "letter")
+        self.assertIn("outside the sheet's printable area", message)
 
 
 if __name__ == "__main__":

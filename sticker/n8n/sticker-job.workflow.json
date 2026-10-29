@@ -3,9 +3,9 @@
   "nodes": [
     {
       "parameters": {
-        "content": "## Sticker intake and sheet generation\\n\\nImported from sticker/n8n/ in the nix-config repo. This file was generated without access to an n8n instance: after importing, open each node and confirm its settings, then run a test submission with disposable art.\\n\\nAll processing is done by the `sticker-tool` command. Customer text is never placed in a command line.\\n\\nSet this workflow's Error Workflow (Settings) to 'Sticker error notify'.",
-        "height": 300,
-        "width": 460
+        "content": "## Sticker intake and sheet generation\\n\\nImported from sticker/n8n/ in the nix-config repo. This file was generated without access to an n8n instance: after importing, open each node and confirm its settings, then run a test submission with disposable art.\\n\\nAll processing is done by the `sticker-tool` command. Customer text is never placed in a command line.\\n\\nSet this workflow's Error Workflow (Settings) to 'Sticker error notify'.\\n\\n'Product' and 'Existing listing' are plain text fields, not dropdowns -- this n8n's Form/Wait node could not set a dropdown's option list from an expression (confirmed: the expression only ever reached Default Value, never Field Options -> Values). Leave either field blank to mean \"new\": blank Product + filled New product letters starts a brand-new product; blank Existing listing starts the next new listing under an already-known product. Typed values are re-validated against the real list in a Code node before anything reaches a command line.\\n\\n'Product' is deliberately read from a different place than 'Existing listing'. list-products scans the read-only design-asset library (Shop-Assets, by folder name only -- it is the business's real, pre-existing catalog) for which 3-letter codes exist at all. list-listings then scans sticker-tool's own outbox for what has actually been produced under the one chosen prefix -- most prefixes will show no existing listings yet, since the asset library predates this tool.\\n\\nThe approval form's Sheet previews field uses an html field type to embed the preview JPGs as base64 -- unverified against a live n8n, confirm it actually renders images rather than raw HTML text.\\n\\nHand-adjusting a layout: open the exported <SKU>_<sheet>.svg from staging in Inkscape, move pieces (no rotate/scale/skew), then run `sticker-tool apply-svg-layout --job <id> --sku <SKU> --sheet <type>` by hand. That command is not wired into the approval dropdown yet -- it is a manual follow-up step, not part of this workflow.",
+        "height": 420,
+        "width": 520
       },
       "id": "067519ea-7e95-5f6c-8403-e43faed98f17",
       "name": "Read me",
@@ -69,10 +69,10 @@
     },
     {
       "parameters": {
-        "command": "=sticker-tool mkincoming --exec-id {{ $execution.id }}"
+        "command": "sticker-tool list-products"
       },
-      "id": "9d51efac-ac73-5f6e-8db2-07d598b2b3ba",
-      "name": "Make incoming folder",
+      "id": "166a98a7-1115-4d1e-9910-0c7ff8b3a9c8",
+      "name": "List products",
       "type": "n8n-nodes-base.executeCommand",
       "typeVersion": 1,
       "position": [
@@ -83,14 +83,209 @@
     },
     {
       "parameters": {
-        "jsCode": "const form = $('Sticker intake form').first();\nconst allowed = { 'image/png': 'png', 'image/jpeg': 'jpg' };\nconst files = [];\nconst out = [];\n\n// One item per accepted upload. Only the extension is taken from the MIME\n// type (allow-list); the stored name is always a server-made 001.png style\n// name. Original names travel in request.json as data, never in a command.\nfor (const [, binary] of Object.entries(form.binary || {})) {\n  const extension = allowed[binary.mimeType];\n  if (!extension) continue;\n  const name = String(files.length + 1).padStart(3, '0') + '.' + extension;\n  files.push({ file: name, original_name: String(binary.fileName || '') });\n  out.push({ json: { targetName: name }, binary: { data: binary } });\n}\n\nconst quantity = form.json['Quantity (optional)'];\nconst request = {\n  size_in: Number(form.json['Sticker size (inches, longest side)']),\n  sheets: [].concat(form.json['Sheet types'] || []),\n  quantity: (quantity === undefined || quantity === null || quantity === '') ? null : Number(quantity),\n  files,\n};\n\nconst requestFile = await this.helpers.prepareBinaryData(\n  Buffer.from(JSON.stringify(request)), 'request.json', 'application/json');\nout.push({ json: { targetName: 'request.json' }, binary: { data: requestFile } });\nreturn out;"
+        "jsCode": "return [{ json: JSON.parse($input.first().json.stdout) }];"
+      },
+      "id": "1157ca76-695b-415b-a378-06e29608e936",
+      "name": "Parse products",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        480,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "resume": "form",
+        "formTitle": "Choose a product",
+        "formDescription": "=Existing products: {{ $('Parse products').first().json.prefixes.join(', ') }}\\n\\nType one of those three-letter codes into Product to add to an existing product, or leave Product blank and fill in New product letters below to start a brand-new one.",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "Product",
+              "fieldType": "text",
+              "requiredField": false
+            },
+            {
+              "fieldLabel": "New product letters (fill in only if Product above is left blank)",
+              "fieldType": "text",
+              "requiredField": false
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "c7b44ff9-3f58-4342-b559-41be5740a3dc",
+      "name": "Choose product",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        720,
+        0
+      ],
+      "webhookId": "53e3e3db-008a-4b3b-b8ea-0a982680ba0e"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "110d11b2-9c7b-453e-b3b3-4fbfca8b0176",
+              "leftValue": "={{ $json.Product }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "b959b7e0-8463-43ab-8656-46975445ac3b",
+      "name": "Is new product?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        960,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const raw = String($json['New product letters (fill in only if Product above is left blank)'] || '').trim().toUpperCase();\nif (!/^[A-Z]{3}$/.test(raw)) {\n  throw new Error('Enter exactly three letters for the new product, e.g. XYZ.');\n}\nconst known = $('Parse products').first().json.prefixes;\nif (known.includes(raw)) {\n  throw new Error(`\"${raw}\" already exists -- leave New product letters blank and type it into Product instead.`);\n}\nreturn [{ json: { prefix: raw, listing: null } }];"
+      },
+      "id": "27443cd9-4fa5-4fa0-9eb9-ab98d376be4f",
+      "name": "Validate new product letters",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1200,
+        -160
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Re-validate the typed value against the real catalog before it ever\n// reaches a command line -- the same trust-boundary rule sticker-tool\n// itself enforces for every other piece of form/customer input.\nconst raw = String($json.Product || '').trim().toUpperCase();\nconst known = $('Parse products').first().json.prefixes;\nif (!/^[A-Z]{3}$/.test(raw) || !known.includes(raw)) {\n  throw new Error(`\"${raw}\" is not an existing product. Valid codes: ${known.join(', ')}`);\n}\nreturn [{ json: { prefix: raw } }];"
+      },
+      "id": "f1a2b3c4-5d6e-4f70-8a8b-9c0d1e2f3a5c",
+      "name": "Validate chosen prefix",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1200,
+        160
+      ]
+    },
+    {
+      "parameters": {
+        "command": "=sticker-tool list-listings --prefix {{ $json.prefix }}"
+      },
+      "id": "2f977545-cb2b-4cfd-9357-7c9c752cf0b6",
+      "name": "List listings for prefix",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        1440,
+        160
+      ],
+      "executeOnce": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const prefix = $('Validate chosen prefix').first().json.prefix;\nconst listings = JSON.parse($input.first().json.stdout).listings;\nreturn [{ json: { prefix, listings } }];"
+      },
+      "id": "e9c1a2b3-4d5e-4f60-8a7b-9c0d1e2f3a4b",
+      "name": "Parse listings",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1680,
+        160
+      ]
+    },
+    {
+      "parameters": {
+        "resume": "form",
+        "formTitle": "Choose a listing",
+        "formDescription": "=Existing listings under {{ $('Parse listings').first().json.prefix }}: {{ $('Parse listings').first().json.listings.map((l) => `${l.sku_root} (${l.variations} variation(s))`).join(', ') || 'none yet' }}\\n\\nType one of those SKUs to add a variation to it, or leave this blank to start the next new listing under this product.",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "Existing listing",
+              "fieldType": "text",
+              "requiredField": false
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "fc7a38f0-5f75-499a-a3a4-2bc34cde9da9",
+      "name": "Choose listing",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        1920,
+        160
+      ],
+      "webhookId": "10277711-ef62-4d91-bd69-92cdd718b50d"
+    },
+    {
+      "parameters": {
+        "jsCode": "const prefix = $('Parse listings').first().json.prefix;\nconst typed = String($json['Existing listing'] || '').trim().toUpperCase();\nif (!typed) {\n  return [{ json: { prefix, listing: null } }];\n}\nconst listings = $('Parse listings').first().json.listings;\nconst match = typed.match(/^([A-Z]{3})([0-9]{3})$/);\nconst known = listings.map((l) => l.sku_root);\nif (!match || match[1] !== prefix || !known.includes(typed)) {\n  throw new Error(`\"${typed}\" is not an existing listing under ${prefix}. Valid: ${known.join(', ') || '(none yet)'}`);\n}\nreturn [{ json: { prefix, listing: Number(match[2]) } }];"
+      },
+      "id": "94ee16d2-8e40-4e02-bd83-2f63cbe25e1d",
+      "name": "Decide listing",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2160,
+        160
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{ json: $input.first().json }];"
+      },
+      "id": "805be8e1-8f27-431f-87e1-f90b2e3e1291",
+      "name": "Resolve product choice",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1920,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "command": "=sticker-tool mkincoming --exec-id {{ $execution.id }}"
+      },
+      "id": "9d51efac-ac73-5f6e-8db2-07d598b2b3ba",
+      "name": "Make incoming folder",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        2160,
+        0
+      ],
+      "executeOnce": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const form = $('Sticker intake form').first();\nconst choice = $('Resolve product choice').first().json;\nconst allowed = { 'image/png': 'png', 'image/jpeg': 'jpg' };\nconst files = [];\nconst out = [];\n\n// One item per accepted upload. Only the extension is taken from the MIME\n// type (allow-list); the stored name is always a server-made 001.png style\n// name. Original names travel in request.json as data, never in a command.\nfor (const [, binary] of Object.entries(form.binary || {})) {\n  const extension = allowed[binary.mimeType];\n  if (!extension) continue;\n  const name = String(files.length + 1).padStart(3, '0') + '.' + extension;\n  files.push({ file: name, original_name: String(binary.fileName || '') });\n  out.push({ json: { targetName: name }, binary: { data: binary } });\n}\n\nconst quantity = form.json['Quantity (optional)'];\nconst request = {\n  size_in: Number(form.json['Sticker size (inches, longest side)']),\n  sheets: [].concat(form.json['Sheet types'] || []),\n  // An empty Quantity field submits as 0 in this n8n version, not '' or\n  // null/undefined -- and 0 is never a valid quantity anyway (sticker-tool\n  // requires >= 1 when given at all), so treat it the same as not provided.\n  quantity: quantity ? Number(quantity) : null,\n  files,\n  prefix: choice.prefix,\n  listing: choice.listing,\n};\n\nconst requestFile = await this.helpers.prepareBinaryData(\n  Buffer.from(JSON.stringify(request)), 'request.json', 'application/json');\nout.push({ json: { targetName: 'request.json' }, binary: { data: requestFile } });\nreturn out;"
       },
       "id": "0a71e323-a6fd-5b37-824a-1835bd49d0aa",
       "name": "Prepare files",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        480,
+        2400,
         0
       ]
     },
@@ -106,7 +301,7 @@
       "type": "n8n-nodes-base.readWriteFile",
       "typeVersion": 1,
       "position": [
-        720,
+        2640,
         0
       ]
     },
@@ -119,7 +314,7 @@
       "type": "n8n-nodes-base.executeCommand",
       "typeVersion": 1,
       "position": [
-        960,
+        2880,
         0
       ],
       "executeOnce": true
@@ -133,7 +328,7 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1200,
+        3120,
         0
       ]
     },
@@ -146,7 +341,7 @@
       "type": "n8n-nodes-base.executeCommand",
       "typeVersion": 1,
       "position": [
-        1440,
+        3360,
         0
       ],
       "executeOnce": true
@@ -160,7 +355,7 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1680,
+        3600,
         0
       ]
     },
@@ -173,34 +368,76 @@
       "type": "n8n-nodes-base.executeCommand",
       "typeVersion": 1,
       "position": [
-        1920,
+        3840,
         0
       ],
       "executeOnce": true
     },
     {
       "parameters": {
-        "jsCode": "const result = JSON.parse($input.first().json.stdout);\nconst lines = result.sheets.map((s) =>\n  `${s.sku} ${s.sheet}: ${s.copies} copies, ${s.fill_percent}% filled` +\n  (s.sheets_needed ? `, ${s.sheets_needed} sheet(s) for the order` : ''));\nreturn [{ json: {\n  job_id: result.job_id,\n  profile: result.profile,\n  summary_text: lines.join('\\n'),\n} }];"
+        "jsCode": "const result = JSON.parse($input.first().json.stdout);\nconst lines = result.sheets.map((s) =>\n  `${s.sku} ${s.sheet}: ${s.copies} copies, ${s.fill_percent}% filled` +\n  (s.sheets_needed ? `, ${s.sheets_needed} sheet(s) for the order` : ''));\nreturn [{ json: {\n  job_id: result.job_id,\n  profile: result.profile,\n  summary_text: lines.join('\\n'),\n  sheets: result.sheets,\n} }];"
       },
       "id": "fe64f61e-c57c-5d17-b18b-79db96d49f0e",
       "name": "Summarize layout",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        2160,
+        4080,
         0
       ]
     },
     {
       "parameters": {
-        "command": "=sticker-tool note-approval --job {{ $json.job_id }} --url \"{{ $execution.resumeFormUrl }}\""
+        "jsCode": "return $('Summarize layout').first().json.sheets.map((s) => ({ json: s }));"
+      },
+      "id": "8039abdd-d3ed-4ce9-95fa-72f3ae8ed079",
+      "name": "Split sheets",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        4320,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "read",
+        "fileSelector": "=/data/outbox/.staging/{{ $('Parse intake').first().json.job_id }}/{{ $json.preview }}",
+        "options": {}
+      },
+      "id": "61101c5a-42b2-4439-8fd6-c59e3d284ce6",
+      "name": "Read preview image",
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "position": [
+        4560,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const parts = $input.all().map((item) => {\n  const binary = item.binary.data;\n  return `<div style=\"margin-bottom:8px\"><strong>${item.json.sku} ${item.json.sheet}</strong> -- ${item.json.copies} copies, ${item.json.fill_percent}% filled<br/>` +\n    `<img src=\"data:${binary.mimeType};base64,${binary.data}\" style=\"max-width:420px;border:1px solid #ccc\"/></div>`;\n});\nreturn [{ json: { preview_html: parts.join('') } }];"
+      },
+      "id": "4bc60e39-d544-41c5-9f78-c107b364bcfd",
+      "name": "Combine previews HTML",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        4800,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "command": "=sticker-tool note-approval --job {{ $('Summarize layout').first().json.job_id }} --url \"{{ $execution.resumeFormUrl }}\""
       },
       "id": "882eea5d-a743-5dff-b624-50a2ad585309",
       "name": "Save approval link",
       "type": "n8n-nodes-base.executeCommand",
       "typeVersion": 1,
       "position": [
-        2400,
+        5040,
         0
       ],
       "executeOnce": true
@@ -212,6 +449,11 @@
         "formDescription": "=Job {{ $('Summarize layout').first().json.job_id }} (profile: {{ $('Summarize layout').first().json.profile }})\\n\\nOpen the preview images in Shop-Outbox/.staging/{{ $('Summarize layout').first().json.job_id }} to review the layout.\\n\\n{{ $('Summarize layout').first().json.summary_text }}",
         "formFields": {
           "values": [
+            {
+              "fieldLabel": "Sheet previews",
+              "fieldType": "html",
+              "html": "={{ $('Combine previews HTML').first().json.preview_html }}"
+            },
             {
               "fieldLabel": "Decision",
               "fieldType": "dropdown",
@@ -242,7 +484,7 @@
       "type": "n8n-nodes-base.wait",
       "typeVersion": 1.1,
       "position": [
-        2640,
+        5280,
         0
       ],
       "webhookId": "720168b3-7dbe-5180-b12d-f6df01986504"
@@ -352,7 +594,7 @@
       "type": "n8n-nodes-base.switch",
       "typeVersion": 3,
       "position": [
-        2880,
+        5520,
         0
       ]
     },
@@ -365,7 +607,7 @@
       "type": "n8n-nodes-base.executeCommand",
       "typeVersion": 1,
       "position": [
-        3120,
+        5760,
         -140
       ],
       "executeOnce": true
@@ -379,7 +621,7 @@
       "type": "n8n-nodes-base.executeCommand",
       "typeVersion": 1,
       "position": [
-        3120,
+        5760,
         220
       ],
       "executeOnce": true
@@ -387,6 +629,134 @@
   ],
   "connections": {
     "Sticker intake form": {
+      "main": [
+        [
+          {
+            "node": "List products",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "List products": {
+      "main": [
+        [
+          {
+            "node": "Parse products",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse products": {
+      "main": [
+        [
+          {
+            "node": "Choose product",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Choose product": {
+      "main": [
+        [
+          {
+            "node": "Is new product?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is new product?": {
+      "main": [
+        [
+          {
+            "node": "Validate new product letters",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Validate chosen prefix",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate new product letters": {
+      "main": [
+        [
+          {
+            "node": "Resolve product choice",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate chosen prefix": {
+      "main": [
+        [
+          {
+            "node": "List listings for prefix",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "List listings for prefix": {
+      "main": [
+        [
+          {
+            "node": "Parse listings",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse listings": {
+      "main": [
+        [
+          {
+            "node": "Choose listing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Choose listing": {
+      "main": [
+        [
+          {
+            "node": "Decide listing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Decide listing": {
+      "main": [
+        [
+          {
+            "node": "Resolve product choice",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Resolve product choice": {
       "main": [
         [
           {
@@ -486,6 +856,39 @@
       ]
     },
     "Summarize layout": {
+      "main": [
+        [
+          {
+            "node": "Split sheets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split sheets": {
+      "main": [
+        [
+          {
+            "node": "Read preview image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read preview image": {
+      "main": [
+        [
+          {
+            "node": "Combine previews HTML",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Combine previews HTML": {
       "main": [
         [
           {

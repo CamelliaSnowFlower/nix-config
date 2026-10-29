@@ -15,23 +15,31 @@ parsed and validated here.
 Layout of the data it manages (paths are configurable through environment
 variables so the tests can use disposable directories):
 
-    $STICKER_OUTBOX/ABC000/          committed files, flat, named by SKU
+    $STICKER_OUTBOX/<PREFIX>000/     committed files for one product line
+                                     (prefix), flat, named by SKU
     $STICKER_OUTBOX/.staging/<job>/  in-progress jobs (same filesystem, so
                                      the final rename is atomic)
-    $STICKER_STATE/registry.db       SQLite registry (listing allocator)
+    $STICKER_STATE/registry.db       SQLite registry (listing allocator,
+                                     shared across every prefix)
     $STICKER_STATE/incoming/<exec>/  uploads written by n8n, consumed by intake
+    $STICKER_ASSETS/<PREFIX>000/     read-only design-asset library (Shop-Assets);
+                                     its folder names are the real product catalog,
+                                     distinct from what sticker-tool itself has produced
 
-Subcommands: mkincoming, intake, process, nest, note-approval, commit,
-reject, reprint, status, record-error.
+Subcommands: mkincoming, list-products, list-listings, intake, process,
+nest, apply-svg-layout, note-approval, commit, reject, reprint, status,
+record-error.
 """
 
 from __future__ import annotations
 
 import argparse
+import base64
 import contextlib
 import copy
 import fcntl
 import hashlib
+import io
 import json
 import math
 import os
@@ -40,6 +48,7 @@ import shutil
 import sqlite3
 import subprocess
 import sys
+import xml.etree.ElementTree as ET
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -54,6 +63,16 @@ JOB_ID_RE = re.compile(r"^job_[0-9a-f]{12}$")
 EXEC_ID_RE = re.compile(r"^[0-9]{1,12}$")
 SKU_RE = re.compile(r"^([A-Z]{3})([0-9]{3})V([0-9]{3})$")
 UPLOAD_NAME_RE = re.compile(r"^[0-9]{3}\.(png|jpg|jpeg)$")
+COPY_ID_RE = re.compile(r"^copy-([0-9]{4})$")
+TRANSLATE_RE = re.compile(r"translate\(\s*(-?[0-9.]+)\s*[,\s]\s*(-?[0-9.]+)\s*\)")
+MATRIX_RE = re.compile(
+    r"matrix\(\s*(-?[0-9.]+)\s*,\s*(-?[0-9.]+)\s*,\s*(-?[0-9.]+)\s*,\s*(-?[0-9.]+)\s*,\s*(-?[0-9.]+)\s*,\s*(-?[0-9.]+)\s*\)"
+)
+# Inkscape writes a single rotate/scale/skew operation in this bare form (not
+# always collapsed into a matrix()) when it's the only transform on an
+# element -- recognised here just to give a clearer rejection message.
+ROTATE_SCALE_SKEW_RE = re.compile(r"(rotate|scale|skew[XY])\(.*\)")
+SVG_NS = "{http://www.w3.org/2000/svg}"
 NODE_NAME_RE = re.compile(r"^[A-Za-z0-9 _.\-]{1,60}$")
 APPROVAL_URL_RE = re.compile(r"^https://[A-Za-z0-9.\-]+(:[0-9]{1,5})?/[A-Za-z0-9._~/?=&%\-]{1,400}$")
 
@@ -83,11 +102,17 @@ DEFAULT_CONFIG = {
     "max_quantity": 100000,
     "max_pixels": 100_000_000,
     "max_copies_per_sheet": 400,
-    # ASSUMPTION: full paper size minus a margin. Replace these with the
-    # printable area Cricut Design Space actually allows for your setup.
+    # "letter"/"tabloid" are the sticker media's own names, not literal US
+    # Letter/Tabloid paper -- the actual sheets are smaller than standard
+    # paper (confirmed against sticker/boundaries/*.png, each exactly ~300dpi
+    # at these dimensions). margin_in is a fallback only, used when "mask" is
+    # absent or its file can't be found (see load_boundary_mask): the real
+    # printable area isn't a uniform-margin rectangle (the templates are
+    # stepped -- edge-to-edge on the sides but inset near top/bottom), so
+    # "mask" takes priority whenever it's available.
     "sheets": {
-        "letter": {"width_in": 8.5, "height_in": 11.0, "margin_in": 0.5},
-        "tabloid": {"width_in": 11.0, "height_in": 17.0, "margin_in": 0.5},
+        "letter": {"width_in": 7.44, "height_in": 9.94, "margin_in": 0.5, "mask": "letter.png"},
+        "tabloid": {"width_in": 9.94, "height_in": 15.94, "margin_in": 0.5, "mask": "tabloid.png"},
     },
     # Nesting profiles. Each tries every rotation set and keeps the sheet that
     # fits the most copies (ties go to the earlier, simpler set).
@@ -187,16 +212,29 @@ def make_file_shareable(path: Path) -> None:
 
 
 class Env:
-    def __init__(self, outbox: str | None = None, state: str | None = None):
+    def __init__(
+        self, outbox: str | None = None, state: str | None = None,
+        assets: str | None = None, boundaries: str | None = None,
+    ):
         self.outbox = Path(outbox or os.environ.get("STICKER_OUTBOX", "/data/outbox"))
         self.state = Path(state or os.environ.get("STICKER_STATE", "/data/state"))
+        # Read-only mount of the design-asset library (Shop-Assets), kept
+        # separate from the outbox: see list_asset_prefixes.
+        self.assets = Path(assets or os.environ.get("STICKER_ASSETS", "/data/assets/Shop-Assets"))
+        # Reference images defining each sheet's real printable area (see
+        # load_boundary_mask). Defaults to sticker/boundaries/ next to this
+        # file for local runs; the packaged deployment sets STICKER_BOUNDARIES
+        # explicitly since a Nix store path can't be a fixed default.
+        self.boundaries = Path(
+            boundaries or os.environ.get("STICKER_BOUNDARIES")
+            or (Path(__file__).resolve().parent / "boundaries")
+        )
         self.cfg = self._load_config()
         self.prefix = self.cfg["prefix"]
         if not PREFIX_RE.match(self.prefix):
             raise ToolError("config prefix must be exactly three capital letters")
         if self.cfg["dpi"] % self.cfg["nest_dpi"] != 0:
             raise ToolError("config dpi must be a multiple of nest_dpi")
-        self.prod = self.outbox / f"{self.prefix}000"
         self.staging = self.outbox / ".staging"
         self.incoming = self.state / "incoming"
         self.db_path = self.state / "registry.db"
@@ -215,8 +253,12 @@ class Env:
             raise ToolError("invalid job id")
         return self.staging / job_id
 
-    def sku(self, listing: int, variation: int) -> str:
-        return f"{self.prefix}{listing:03d}V{variation:03d}"
+    def product_dir(self, prefix: str) -> Path:
+        """Each 3-letter prefix (product line) gets its own flat folder, e.g.
+
+        $STICKER_OUTBOX/ABC000/, $STICKER_OUTBOX/XYZ000/, side by side.
+        """
+        return self.outbox / f"{prefix}000"
 
 
 # --------------------------------------------------------------------------
@@ -322,6 +364,46 @@ class Registry:
                 )
         return self.get_job(job_id), False
 
+    def add_variation(
+        self, job_id: str, listing: int, params: dict, originals: list[str],
+        prefix: str, variation_max: int,
+    ):
+        """Add new variations to an existing listing, instead of reserve()
+        allocating a new one.
+
+        `variation_max` is the reconciled starting point the caller computed
+        with scan_listing_max_variation -- the higher of what the registry
+        already recorded and what is actually on disk for this listing, the
+        same reconciliation idea reserve() already uses for folder_max.
+        """
+        with self.transaction() as conn:
+            existing = self.get_job(job_id)
+            if existing is not None:
+                return existing, True
+            row = conn.execute("SELECT status FROM listings WHERE listing = ?", (listing,)).fetchone()
+            if row is None:
+                raise ToolError(f"listing {listing:03d} does not exist; it cannot take a new variation")
+            db_max = conn.execute(
+                "SELECT COALESCE(MAX(variation), 0) FROM variants WHERE listing = ?", (listing,)
+            ).fetchone()[0]
+            next_variation = max(db_max, variation_max)
+            stamp = now_iso()
+            conn.execute(
+                "INSERT INTO jobs(job_id, listing, state, params_json, created_at, updated_at)"
+                " VALUES (?, ?, 'staged', ?, ?, ?)",
+                (job_id, listing, json.dumps(params, sort_keys=True), stamp, stamp),
+            )
+            for offset, name in enumerate(originals, start=1):
+                variation = next_variation + offset
+                if variation > 999:
+                    raise ToolError("variation numbers are exhausted (three digits, 999 maximum)")
+                conn.execute(
+                    "INSERT INTO variants(sku, job_id, listing, variation, source_name)"
+                    " VALUES (?, ?, ?, ?, ?)",
+                    (f"{prefix}{listing:03d}V{variation:03d}", job_id, listing, variation, name),
+                )
+        return self.get_job(job_id), False
+
     def release(self, job_id: str) -> None:
         with self.transaction() as conn:
             conn.execute("DELETE FROM variants WHERE job_id = ?", (job_id,))
@@ -340,6 +422,13 @@ class Registry:
                 (stamp, job_id),
             )
 
+    def get_variants(self, job_id: str) -> list[dict]:
+        rows = self.conn.execute(
+            "SELECT sku, variation, source_name FROM variants WHERE job_id = ? ORDER BY variation",
+            (job_id,),
+        ).fetchall()
+        return [{"sku": r[0], "variation": r[1], "source_name": r[2]} for r in rows]
+
     def all_jobs(self):
         rows = self.conn.execute(
             "SELECT job_id, listing, state FROM jobs ORDER BY listing"
@@ -347,15 +436,104 @@ class Registry:
         return [{"job_id": r[0], "listing": r[1], "state": r[2]} for r in rows]
 
 
-def scan_folder_max(env: Env) -> int:
-    rx = re.compile(rf"^{env.prefix}([0-9]{{3}})V[0-9]{{3}}")
+def scan_folder_max(env: Env, prefix: str) -> int:
+    """Highest listing number already on disk under one prefix's folder.
+
+    A reconciliation input only (see Registry.reserve) -- files added to
+    <prefix>000 by hand are never reused, even if the registry never learned
+    about them.
+    """
+    rx = re.compile(rf"^{prefix}([0-9]{{3}})V[0-9]{{3}}")
     best = 0
-    if env.prod.is_dir():
-        for name in os.listdir(env.prod):
+    folder = env.product_dir(prefix)
+    if folder.is_dir():
+        for name in os.listdir(folder):
             match = rx.match(name)
             if match:
                 best = max(best, int(match.group(1)))
     return best
+
+
+def scan_listing_max_variation(env: Env, prefix: str, listing: int) -> int:
+    """Highest variation number already on disk for one existing listing.
+
+    The same reconciliation idea as scan_folder_max, but for adding a
+    variation to a listing that already exists instead of allocating a new
+    one: a hand-added ABC008V005.png must not be overwritten by a variation
+    the registry thinks is still free.
+    """
+    rx = re.compile(rf"^{prefix}{listing:03d}V([0-9]{{3}})")
+    best = 0
+    folder = env.product_dir(prefix)
+    if folder.is_dir():
+        for name in os.listdir(folder):
+            match = rx.match(name)
+            if match:
+                best = max(best, int(match.group(1)))
+    return best
+
+
+PRODUCT_FOLDER_RE = re.compile(r"^([A-Z]{3})000$")
+SKU_FILE_RE = re.compile(r"^([A-Z]{3})([0-9]{3})V([0-9]{3})\.png$")
+
+
+def list_asset_prefixes(env: Env) -> list[str]:
+    """Existing product codes, read from the design-asset library's folder
+    names alone (e.g. Shop-Assets/ACJ000, .../DMD000) -- never from file
+    names inside them, since that library predates sticker-tool and its
+    files don't follow sticker-tool's naming. This is the real product
+    catalog the business already has; sticker-tool's own outbox (see
+    list_listings_for_prefix) only knows about what it has itself produced.
+    """
+    prefixes = set()
+    if env.assets.is_dir():
+        for entry in os.listdir(env.assets):
+            match = PRODUCT_FOLDER_RE.match(entry)
+            if match and (env.assets / entry).is_dir():
+                prefixes.add(match.group(1))
+    return sorted(prefixes)
+
+
+def list_listings_for_prefix(env: Env, prefix: str) -> list[dict]:
+    """Listings sticker-tool itself has already produced under one product
+    code, by scanning its own <PREFIX>000 folder under the outbox.
+
+    Most product codes from list_asset_prefixes will have nothing here yet
+    -- that library is the business's full catalog; this is only the subset
+    that has actually been run through this pipeline.
+    """
+    counts: dict[int, int] = {}
+    folder = env.product_dir(prefix)
+    if folder.is_dir():
+        for name in os.listdir(folder):
+            match = SKU_FILE_RE.match(name)
+            if match and match.group(1) == prefix:
+                listing = int(match.group(2))
+                counts[listing] = max(counts.get(listing, 0), int(match.group(3)))
+    return [
+        {
+            "prefix": prefix,
+            "listing": listing,
+            "sku_root": f"{prefix}{listing:03d}",
+            "variations": count,
+            "next_variation": count + 1,
+        }
+        for listing, count in sorted(counts.items())
+    ]
+
+
+def list_outbox_products(env: Env) -> list[dict]:
+    """Every listing sticker-tool has produced, across every prefix folder
+    found under the outbox. Operational status only (see cmd_status) -- the
+    n8n intake form's product picker uses list_asset_prefixes instead.
+    """
+    results = []
+    if env.outbox.is_dir():
+        for entry in sorted(os.listdir(env.outbox)):
+            match = PRODUCT_FOLDER_RE.match(entry)
+            if match and (env.outbox / entry).is_dir():
+                results.extend(list_listings_for_prefix(env, match.group(1)))
+    return results
 
 
 # --------------------------------------------------------------------------
@@ -572,25 +750,64 @@ def dilate_square(mask: np.ndarray, radius: int) -> np.ndarray:
     return result
 
 
-def nest_sheet(sticker: Image.Image, sheet: dict, gap_in: float, rotations: list[int], cfg: dict) -> dict:
+def load_boundary_mask(env: Env, sheet_cfg: dict, canvas_w: int, canvas_h: int) -> np.ndarray | None:
+    """The real printable area for one sheet, read from a reference image
+    (e.g. a Cricut print-then-cut template) instead of assumed to be a
+    uniform-margin rectangle. True = printable. Returns None (caller falls
+    back to margin_in) if no "mask" is configured or the file is missing --
+    an explicit image is a nicety, not something every deployment must have.
+    """
+    name = sheet_cfg.get("mask")
+    if not name:
+        return None
+    path = env.boundaries / name
+    if not path.is_file():
+        return None
+    image = Image.open(path).convert("RGBA")
+    if image.size != (canvas_w, canvas_h):
+        image = image.resize((canvas_w, canvas_h), Image.Resampling.NEAREST)
+    arr = np.array(image)
+    is_white = (arr[:, :, 0] > 250) & (arr[:, :, 1] > 250) & (arr[:, :, 2] > 250)
+    return (arr[:, :, 3] > 10) & ~is_white
+
+
+def nest_sheet(
+    sticker: Image.Image, sheet: dict, gap_in: float, rotations: list[int], cfg: dict,
+    boundary_mask: np.ndarray | None = None,
+) -> dict:
     """Greedy first-fit packing using real outlines, not bounding boxes.
 
     Every copy is placed where its (slightly grown) silhouette overlaps nothing
-    already placed. Collision tests run as FFT cross-correlations on a coarse
-    grid. Silhouettes are pooled with `max`, so the coarse mask always covers
-    the true outline and placements never overlap at full resolution.
-    Fully deterministic: no randomness anywhere.
+    already placed or forbidden (see boundary_mask/load_boundary_mask -- a
+    plain margin_in rectangle when no mask is given). Collision tests run as
+    FFT cross-correlations on a coarse grid. Silhouettes are pooled with
+    `max`, so the coarse mask always covers the true outline and placements
+    never overlap at full resolution. Fully deterministic: no randomness
+    anywhere.
     """
     dpi = cfg["dpi"]
     factor = dpi // cfg["nest_dpi"]
-    margin = round(sheet["margin_in"] * dpi)
     canvas_w = round(sheet["width_in"] * dpi)
     canvas_h = round(sheet["height_in"] * dpi)
-    grid_w = (canvas_w - 2 * margin) // factor
-    grid_h = (canvas_h - 2 * margin) // factor
+
+    if boundary_mask is not None:
+        margin = 0
+        allowed_full = boundary_mask
+    else:
+        margin = round(sheet["margin_in"] * dpi)
+        allowed_full = np.zeros((canvas_h, canvas_w), dtype=bool)
+        allowed_full[margin:canvas_h - margin, margin:canvas_w - margin] = True
+
+    grid_w = canvas_w // factor
+    grid_h = canvas_h // factor
     if grid_w <= 0 or grid_h <= 0:
         raise ToolError("sheet margins leave no printable area")
     gap_cells = math.ceil(round(gap_in * dpi) / factor / 2)
+    # A coarse cell is forbidden if any full-resolution pixel inside it is --
+    # the same "never shrink the excluded footprint" direction pool_max
+    # already applies to sticker silhouettes, so nothing straddles the real
+    # boundary.
+    forbidden_coarse = pool_max(~allowed_full, factor)[:grid_h, :grid_w]
 
     shapes = []
     for index, angle in enumerate(rotations):
@@ -612,7 +829,7 @@ def nest_sheet(sticker: Image.Image, sheet: dict, gap_in: float, rotations: list
     if not shapes:
         raise ToolError("the sticker does not fit on this sheet at any allowed rotation")
 
-    occupied = np.zeros((grid_h, grid_w), dtype=np.float64)
+    occupied = forbidden_coarse.astype(np.float64)
     placements = []
     covered_px = 0
     while len(placements) < cfg["max_copies_per_sheet"]:
@@ -636,12 +853,12 @@ def nest_sheet(sticker: Image.Image, sheet: dict, gap_in: float, rotations: list
         region = occupied[row:row + height, col:col + width]
         np.maximum(region, shape["mask"], out=region)
         placements.append({
-            "x": margin + (col + gap_cells) * factor,
-            "y": margin + (row + gap_cells) * factor,
+            "x": (col + gap_cells) * factor,
+            "y": (row + gap_cells) * factor,
             "rotation": shape["angle"],
         })
         covered_px += shape["area_px"]
-    printable = (canvas_w - 2 * margin) * (canvas_h - 2 * margin)
+    printable = int(allowed_full.sum())
     return {
         "canvas_px": [canvas_w, canvas_h],
         "margin_px": margin,
@@ -649,7 +866,7 @@ def nest_sheet(sticker: Image.Image, sheet: dict, gap_in: float, rotations: list
         "rotation_set": rotations,
         "nest_dpi": cfg["nest_dpi"],
         "copies": len(placements),
-        "fill_percent": round(100.0 * covered_px / printable, 2),
+        "fill_percent": round(100.0 * covered_px / printable, 2) if printable else 0.0,
         "placements": placements,
     }
 
@@ -681,14 +898,186 @@ def save_preview(canvas: Image.Image, path: Path) -> None:
     make_file_shareable(path)
 
 
-def best_layout(sticker: Image.Image, sheet: dict, profile: dict, cfg: dict) -> dict:
+def best_layout(
+    sticker: Image.Image, sheet: dict, profile: dict, cfg: dict,
+    boundary_mask: np.ndarray | None = None,
+) -> dict:
     gap = profile["gap_in"] if profile.get("gap_in") is not None else cfg["gap_in"]
     best = None
     for rotation_set in profile["rotation_sets"]:
-        candidate = nest_sheet(sticker, sheet, gap, rotation_set, cfg)
+        candidate = nest_sheet(sticker, sheet, gap, rotation_set, cfg, boundary_mask)
         if best is None or candidate["copies"] > best["copies"]:
             best = candidate
     return best
+
+
+# --------------------------------------------------------------------------
+# Inkscape-editable SVG view of a layout, and reading hand edits back
+# --------------------------------------------------------------------------
+
+
+def sheet_svg(sticker: Image.Image, layout: dict, dpi: int) -> str:
+    """An Inkscape-editable SVG view of one sheet's layout.
+
+    Rotation is baked into the raster (one <defs> entry per angle actually
+    used, pre-rotated exactly like render_sheet()'s own cache), not an SVG
+    transform -- a hand edit in Inkscape can reposition a copy, or swap it
+    to a different angle already in <defs>, but never introduce a new
+    rotation, scale, or skew. parse_svg_layout() enforces that on the way
+    back in.
+    """
+    width_px, height_px = layout["canvas_px"]
+    angles = sorted({place["rotation"] for place in layout["placements"]})
+    defs = []
+    for angle in angles:
+        variant = rotate_rgba(sticker, angle)
+        buffer = io.BytesIO()
+        variant.save(buffer, format="PNG")
+        encoded = base64.b64encode(buffer.getvalue()).decode("ascii")
+        defs.append(
+            f'    <image id="art-{angle}" width="{variant.width}" height="{variant.height}" '
+            f'xlink:href="data:image/png;base64,{encoded}"/>'
+        )
+    uses = []
+    for index, place in enumerate(layout["placements"], start=1):
+        uses.append(
+            f'    <use id="copy-{index:04d}" xlink:href="#art-{place["rotation"]}" '
+            f'data-rotation="{place["rotation"]}" x="{place["x"]}" y="{place["y"]}"/>'
+        )
+    return (
+        '<?xml version="1.0" encoding="UTF-8"?>\n'
+        '<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" '
+        f'width="{width_px / dpi}in" height="{height_px / dpi}in" '
+        f'viewBox="0 0 {width_px} {height_px}">\n'
+        "  <defs>\n" + "\n".join(defs) + "\n  </defs>\n"
+        '  <g id="copies">\n' + "\n".join(uses) + "\n  </g>\n"
+        "</svg>\n"
+    )
+
+
+def parse_svg_position(element: ET.Element, element_id: str) -> tuple[int, int]:
+    """x/y from direct attributes, plus any translate/matrix transform on top.
+
+    Inkscape's selector tool only ever moves a plain <use> element -- it has
+    no reason to introduce rotation, scale, or skew on its own. A matrix
+    transform whose rotation/scale part isn't the identity therefore means
+    something other than a plain move happened (a manual rotate/scale in
+    Inkscape, or a hand-edited transform), and is rejected rather than
+    silently reinterpreted.
+    """
+    x = float(element.get("x", "0"))
+    y = float(element.get("y", "0"))
+    transform = element.get("transform")
+    if transform:
+        transform = transform.strip()
+        match = TRANSLATE_RE.fullmatch(transform)
+        if match:
+            x += float(match.group(1))
+            y += float(match.group(2))
+        elif ROTATE_SCALE_SKEW_RE.fullmatch(transform):
+            raise ToolError(
+                f"{element_id} was rotated, scaled, or skewed in Inkscape; only "
+                "repositioning (or swapping to another already-rendered rotation) is "
+                "supported -- use the 'more rotations' re-run for a genuinely new angle"
+            )
+        else:
+            match = MATRIX_RE.fullmatch(transform)
+            if not match:
+                raise ToolError(f"{element_id} has an unsupported transform: {transform!r}")
+            a, b, c, d, e, f = (float(group) for group in match.groups())
+            if abs(a - 1) > 1e-3 or abs(d - 1) > 1e-3 or abs(b) > 1e-3 or abs(c) > 1e-3:
+                raise ToolError(
+                    f"{element_id} was rotated, scaled, or skewed in Inkscape; only "
+                    "repositioning (or swapping to another already-rendered rotation) is "
+                    "supported -- use the 'more rotations' re-run for a genuinely new angle"
+                )
+            x += e
+            y += f
+    if x < 0 or y < 0:
+        raise ToolError(f"{element_id} was moved off the sheet (negative position)")
+    return round(x), round(y)
+
+
+def parse_svg_layout(svg_path: Path, expected_count: int, allowed_angles: set[int]) -> list[dict]:
+    try:
+        tree = ET.parse(svg_path)
+    except ET.ParseError as error:
+        raise ToolError("the edited SVG is not valid XML") from error
+    uses = list(tree.getroot().iter(f"{SVG_NS}use"))
+    if len(uses) != expected_count:
+        raise ToolError(
+            f"the edited SVG has {len(uses)} copies, expected {expected_count}; copies "
+            "cannot be added or removed by hand, only repositioned"
+        )
+    placements = []
+    for element in uses:
+        element_id = element.get("id", "")
+        id_match = COPY_ID_RE.match(element_id)
+        if not id_match:
+            raise ToolError(f"unexpected element id in the edited SVG: {element_id!r}")
+        rotation_attr = element.get("data-rotation")
+        if rotation_attr is None:
+            raise ToolError(f"{element_id} is missing its data-rotation attribute")
+        try:
+            rotation = int(rotation_attr)
+        except ValueError as error:
+            raise ToolError(f"{element_id} has a non-numeric data-rotation") from error
+        if rotation not in allowed_angles:
+            raise ToolError(
+                f"{element_id} uses rotation {rotation}, which was not pre-rendered for this "
+                "sheet; only angles already in the layout can be used by hand"
+            )
+        x, y = parse_svg_position(element, element_id)
+        placements.append({"order": int(id_match.group(1)), "x": x, "y": y, "rotation": rotation})
+    placements.sort(key=lambda place: place["order"])
+    return [{"x": place["x"], "y": place["y"], "rotation": place["rotation"]} for place in placements]
+
+
+def check_no_overlap(
+    sticker: Image.Image, placements: list[dict], sheet: dict, dpi: int,
+    boundary_mask: np.ndarray | None = None,
+) -> None:
+    """Reject a hand-edited layout that introduces overlap, runs off the
+    sheet, or (when boundary_mask is given) extends outside the real
+    printable area nest_sheet() used.
+
+    Holds a hand edit to the same standard nest_sheet() enforces automatically:
+    every copy's (gap-dilated) silhouette, at full resolution rather than
+    nest_sheet's coarse collision grid since this runs once per edit, not in
+    a tight search loop.
+    """
+    canvas_w, canvas_h = sheet["canvas_px"]
+    gap_px = math.ceil(round(sheet["gap_in"] * dpi) / 2)
+    occupied = np.zeros((canvas_h, canvas_w), dtype=bool)
+    cache: dict[int, tuple[np.ndarray, np.ndarray]] = {}
+    for place in placements:
+        angle = place["rotation"]
+        if angle not in cache:
+            rotated = rotate_rgba(sticker, angle)
+            alpha = np.array(rotated.getchannel("A")) > 0
+            cache[angle] = (alpha, dilate_square(alpha, gap_px))
+        alpha, mask = cache[angle]
+        height, width = mask.shape
+        row, col = place["y"], place["x"]
+        if row < 0 or col < 0 or row + height > canvas_h or col + width > canvas_w:
+            raise ToolError("a hand-moved copy runs off the edge of the sheet")
+        if boundary_mask is not None:
+            # Checked against the undilated silhouette, not the gap-grown
+            # mask: the gap itself extending toward a forbidden zone is
+            # fine, since nothing is actually printed there. dilate_square
+            # pads by gap_px on every side, so the undilated silhouette sits
+            # offset by gap_px within the dilated footprint at (row, col).
+            a_height, a_width = alpha.shape
+            a_row, a_col = row + gap_px, col + gap_px
+            region_allowed = boundary_mask[a_row:a_row + a_height, a_col:a_col + a_width]
+            if not np.all(region_allowed | ~alpha):
+                raise ToolError(
+                    "a hand-moved copy extends outside the sheet's printable area"
+                )
+        region = occupied[row:row + height, col:col + width]
+        if np.any(region & mask):
+            raise ToolError("hand-moved copies overlap; move one further apart and try again")
+        occupied[row:row + height, col:col + width] |= mask
 
 
 # --------------------------------------------------------------------------
@@ -712,9 +1101,18 @@ def cmd_mkincoming(env: Env, args) -> dict:
 
 def validate_request(env: Env, request: dict, directory: Path) -> tuple[dict, list[dict]]:
     cfg = env.cfg
-    allowed = {"size_in", "sheets", "quantity", "files"}
+    allowed = {"size_in", "sheets", "quantity", "files", "prefix", "listing"}
     if not isinstance(request, dict) or set(request) - allowed:
         raise ToolError("request.json has missing or unexpected fields")
+    prefix = request.get("prefix", env.prefix)
+    if not isinstance(prefix, str) or not PREFIX_RE.match(prefix):
+        raise ToolError("prefix must be exactly three capital letters")
+    # listing is present only when adding a variation to an existing product;
+    # absent (None) means "this upload starts a new listing", today's
+    # default behaviour.
+    listing = request.get("listing")
+    if listing is not None and (isinstance(listing, bool) or not isinstance(listing, int) or not (1 <= listing <= 999)):
+        raise ToolError("listing must be a whole number between 1 and 999")
     size_in = request.get("size_in")
     if isinstance(size_in, bool) or not isinstance(size_in, (int, float)):
         raise ToolError("size_in must be a number")
@@ -751,7 +1149,7 @@ def validate_request(env: Env, request: dict, directory: Path) -> tuple[dict, li
             raise ToolError("a listed upload is missing")
         image = open_checked(path, cfg)
         cleaned.append({"path": path, "format": image.format, "original_name": original})
-    params = {"size_in": float(size_in), "sheets": sheets, "quantity": quantity}
+    params = {"size_in": float(size_in), "sheets": sheets, "quantity": quantity, "prefix": prefix, "listing": listing}
     return params, cleaned
 
 
@@ -776,23 +1174,32 @@ def cmd_intake(env: Env, args) -> dict:
         except (ValueError, OSError) as error:
             raise ToolError("request.json is not valid JSON") from error
         params, uploads = validate_request(env, request, directory)
+        prefix = params["prefix"]
+        listing_choice = params["listing"]
+        originals = [u["original_name"] for u in uploads]
         make_dir(env.staging)
-        make_dir(env.prod)
-        job, _ = registry.reserve(
-            job_id, params, [u["original_name"] for u in uploads], scan_folder_max(env), env.prefix
-        )
+        make_dir(env.product_dir(prefix))
+        if listing_choice is None:
+            job, _ = registry.reserve(job_id, params, originals, scan_folder_max(env, prefix), prefix)
+        else:
+            variation_max = scan_listing_max_variation(env, prefix, listing_choice)
+            job, _ = registry.add_variation(job_id, listing_choice, params, originals, prefix, variation_max)
         stage = env.job_dir(job_id)
         make_dir(stage)
+        # Read the SKUs/variation numbers back from the registry rather than
+        # recomputing them here: add_variation's starting number depends on
+        # state (the registry's own records reconciled against the folder)
+        # that only the registry call above actually resolved.
+        assigned = registry.get_variants(job_id)
         variants = []
-        for variation, upload in enumerate(uploads, start=1):
-            sku = env.sku(job["listing"], variation)
+        for assignment, upload in zip(assigned, uploads, strict=True):
             extension = ".png" if upload["format"] == "PNG" else ".jpg"
-            source_name = f"{sku}_source{extension}"
+            source_name = f"{assignment['sku']}_source{extension}"
             shutil.copyfile(upload["path"], stage / source_name)
             make_file_shareable(stage / source_name)
             variants.append({
-                "variation": variation,
-                "sku": sku,
+                "variation": assignment["variation"],
+                "sku": assignment["sku"],
                 "source_file": source_name,
                 "source_sha256": sha256_file(stage / source_name),
                 "original_name": upload["original_name"],
@@ -801,7 +1208,7 @@ def cmd_intake(env: Env, args) -> dict:
             "schema": SCHEMA_VERSION,
             "job_id": job_id,
             "listing": job["listing"],
-            "prefix": env.prefix,
+            "prefix": prefix,
             "params": params,
             "variants": variants,
             "state": "staged",
@@ -875,6 +1282,7 @@ def cmd_nest(env: Env, args) -> dict:
         stage, manifest = load_manifest(env, args.job)
         quantity = manifest["params"]["quantity"]
         summary = []
+        boundary_masks: dict[str, np.ndarray | None] = {}
         for variant in manifest["variants"]:
             sticker = Image.open(stage / variant["sticker_file"]).convert("RGBA")
             layout = {
@@ -887,11 +1295,18 @@ def cmd_nest(env: Env, args) -> dict:
                 "sheets": {},
             }
             for sheet_name in manifest["params"]["sheets"]:
-                result = best_layout(sticker, env.cfg["sheets"][sheet_name], profile, env.cfg)
+                sheet_cfg = env.cfg["sheets"][sheet_name]
+                if sheet_name not in boundary_masks:
+                    canvas_w = round(sheet_cfg["width_in"] * env.cfg["dpi"])
+                    canvas_h = round(sheet_cfg["height_in"] * env.cfg["dpi"])
+                    boundary_masks[sheet_name] = load_boundary_mask(env, sheet_cfg, canvas_w, canvas_h)
+                result = best_layout(sticker, sheet_cfg, profile, env.cfg, boundary_masks[sheet_name])
                 canvas = render_sheet(sticker, result, env.cfg["dpi"])
                 sheet_path = stage / f"{variant['sku']}_{sheet_name}.png"
                 result["sheet_sha256"] = save_sheet(canvas, sheet_path, env.cfg["dpi"])
                 save_preview(canvas, stage / f"{variant['sku']}_{sheet_name}_preview.jpg")
+                svg_name = f"{variant['sku']}_{sheet_name}.svg"
+                atomic_write_text(stage / svg_name, sheet_svg(sticker, result, env.cfg["dpi"]))
                 layout["sheets"][sheet_name] = result
                 entry = {
                     "sku": variant["sku"],
@@ -899,6 +1314,7 @@ def cmd_nest(env: Env, args) -> dict:
                     "copies": result["copies"],
                     "fill_percent": result["fill_percent"],
                     "preview": f"{variant['sku']}_{sheet_name}_preview.jpg",
+                    "editable_svg": svg_name,
                 }
                 if quantity is not None and result["copies"] > 0:
                     entry["sheets_needed"] = math.ceil(quantity / result["copies"])
@@ -913,6 +1329,69 @@ def cmd_nest(env: Env, args) -> dict:
         registry.close()
 
 
+def cmd_apply_svg_layout(env: Env, args) -> dict:
+    """Re-render a sheet from a hand-edited copy of its <SKU>_<sheet>.svg.
+
+    Lets Inkscape be the by-hand placement editor: nest already wrote an
+    editable SVG per sheet; this reads it back, validates the edit is a
+    rigid reposition (see parse_svg_position) that introduces no overlap and
+    stays on the sheet, then regenerates the PNG/preview/layout.json/SVG so
+    they agree with what was actually moved.
+    """
+    registry = Registry(env.db_path)
+    try:
+        job = registry.get_job(args.job)
+        if job is None:
+            raise ToolError("unknown job")
+        if job["state"] in ("committing", "committed"):
+            raise ToolError("a committing or committed job's layout can no longer be edited")
+        stage, manifest = load_manifest(env, args.job)
+        variant = next((v for v in manifest["variants"] if v["sku"] == args.sku), None)
+        if variant is None:
+            raise ToolError("unknown SKU for this job")
+        layout_path = stage / f"{args.sku}_layout.json"
+        if not layout_path.is_file():
+            raise ToolError("run nest before editing its layout")
+        layout = read_json(layout_path)
+        sheet = layout["sheets"].get(args.sheet)
+        if sheet is None:
+            raise ToolError("no layout for that sheet type; run nest first")
+        svg_path = stage / f"{args.sku}_{args.sheet}.svg"
+        if not svg_path.is_file():
+            raise ToolError("no editable SVG found for this sheet")
+        allowed_angles = {place["rotation"] for place in sheet["placements"]}
+        placements = parse_svg_layout(svg_path, len(sheet["placements"]), allowed_angles)
+        sticker = Image.open(stage / variant["sticker_file"]).convert("RGBA")
+        canvas_w, canvas_h = sheet["canvas_px"]
+        boundary_mask = load_boundary_mask(env, env.cfg["sheets"][args.sheet], canvas_w, canvas_h)
+        check_no_overlap(sticker, placements, sheet, layout["dpi"], boundary_mask)
+        if boundary_mask is not None:
+            printable = int(boundary_mask.sum())
+        else:
+            printable = (canvas_w - 2 * sheet["margin_px"]) * (canvas_h - 2 * sheet["margin_px"])
+        area_cache: dict[int, int] = {}
+        covered_px = 0
+        for place in placements:
+            angle = place["rotation"]
+            if angle not in area_cache:
+                area_cache[angle] = int((np.array(rotate_rgba(sticker, angle).getchannel("A")) > 0).sum())
+            covered_px += area_cache[angle]
+        fill_percent = round(100.0 * covered_px / printable, 2) if printable else 0.0
+        updated = dict(sheet, placements=placements, fill_percent=fill_percent)
+        canvas = render_sheet(sticker, updated, layout["dpi"])
+        updated["sheet_sha256"] = save_sheet(canvas, stage / f"{args.sku}_{args.sheet}.png", layout["dpi"])
+        save_preview(canvas, stage / f"{args.sku}_{args.sheet}_preview.jpg")
+        atomic_write_text(svg_path, sheet_svg(sticker, updated, layout["dpi"]))
+        layout["sheets"][args.sheet] = updated
+        write_json(layout_path, layout)
+        return {
+            "job_id": args.job, "sku": args.sku, "sheet": args.sheet,
+            "copies": len(placements), "fill_percent": updated["fill_percent"],
+        }
+    finally:
+        registry.close()
+
+
 def cmd_note_approval(env: Env, args) -> dict:
     if not APPROVAL_URL_RE.match(args.url):
         raise ToolError("approval URL has unexpected characters")
@@ -921,6 +1400,15 @@ def cmd_note_approval(env: Env, args) -> dict:
         stage / "APPROVAL-LINK.txt",
         "Open this link (on the tailnet) to approve, re-run, or reject this job:\n" + args.url + "\n",
     )
+    # Fixed path (unlike APPROVAL-LINK.txt, which lives under the per-job
+    # staging directory) so the GNOME notifier can watch one well-known file,
+    # the same way it already watches last-error.json.
+    make_dir(env.state)
+    write_json(env.state / "latest-approval.json", {
+        "job_id": args.job,
+        "url": args.url,
+        "time": now_iso(),
+    })
     return {"job_id": args.job, "approval_file": str(stage / "APPROVAL-LINK.txt")}
 
 
@@ -932,6 +1420,7 @@ def commit_entries(manifest: dict) -> list[str]:
         names.append(f"{sku}_layout.json")
         for sheet in manifest["params"]["sheets"]:
             names.append(f"{sku}_{sheet}.png")
+            names.append(f"{sku}_{sheet}.svg")
         names.append(f"{sku}.png")  # the finished sticker is published last
     return names
 
@@ -948,8 +1437,9 @@ def cmd_commit(env: Env, args) -> dict:
             if job["state"] not in ("nested", "committing"):
                 raise ToolError("job must be nested (and approved) before it can be committed")
             stage, manifest = load_manifest(env, args.job)
+            product_dir = env.product_dir(manifest["prefix"])
             journal_path = stage / "journal.json"
-            make_dir(env.prod)
+            make_dir(product_dir)
             if journal_path.is_file():
                 journal = read_json(journal_path)
             else:
@@ -958,7 +1448,7 @@ def cmd_commit(env: Env, args) -> dict:
                     source = stage / name
                     if not source.is_file():
                         raise ToolError(f"missing staged file: {name}")
-                    if (env.prod / name).exists():
+                    if (product_dir / name).exists():
                         raise ToolError(f"refusing to overwrite existing file: {name}")
                     entries.append({"name": name, "sha256": sha256_file(source), "done": False})
                 journal = {"job_id": args.job, "entries": entries}
@@ -968,7 +1458,7 @@ def cmd_commit(env: Env, args) -> dict:
                 if entry["done"]:
                     continue
                 source = stage / entry["name"]
-                target = env.prod / entry["name"]
+                target = product_dir / entry["name"]
                 if not source.exists():
                     if target.exists() and sha256_file(target) == entry["sha256"]:
                         entry["done"] = True
@@ -981,7 +1471,7 @@ def cmd_commit(env: Env, args) -> dict:
                 make_file_shareable(target)
                 entry["done"] = True
                 write_json(journal_path, journal)
-            fsync_dir(env.prod)
+            fsync_dir(product_dir)
             registry.finish(args.job)
             shutil.rmtree(stage, ignore_errors=True)
             return {"job_id": args.job, "state": "committed", "files": [e["name"] for e in journal["entries"]]}
@@ -1008,12 +1498,13 @@ def cmd_reject(env: Env, args) -> dict:
 
 def cmd_reprint(env: Env, args) -> dict:
     match = SKU_RE.match(args.sku)
-    if not match or match.group(1) != env.prefix:
+    if not match:
         raise ToolError("invalid SKU")
+    product_dir = env.product_dir(match.group(1))
     if args.sheet not in env.cfg["sheets"]:
         raise ToolError("unknown sheet type")
-    layout_path = env.prod / f"{args.sku}_layout.json"
-    sticker_path = env.prod / f"{args.sku}.png"
+    layout_path = product_dir / f"{args.sku}_layout.json"
+    sticker_path = product_dir / f"{args.sku}.png"
     if not layout_path.is_file() or not sticker_path.is_file():
         raise ToolError("that SKU is not in the production folder")
     layout = read_json(layout_path)
@@ -1045,10 +1536,21 @@ def cmd_status(env: Env, args) -> dict:
             return describe_job(env, registry, args.job)
         return {
             "jobs": registry.all_jobs(),
-            "folder_max_listing": scan_folder_max(env),
+            "folder_max_listing": scan_folder_max(env, env.prefix),
+            "products": list_outbox_products(env),
         }
     finally:
         registry.close()
+
+
+def cmd_list_products(env: Env, args) -> dict:
+    return {"prefixes": list_asset_prefixes(env)}
+
+
+def cmd_list_listings(env: Env, args) -> dict:
+    if not PREFIX_RE.match(args.prefix):
+        raise ToolError("prefix must be exactly three capital letters")
+    return {"listings": list_listings_for_prefix(env, args.prefix)}
 
 
 def cmd_record_error(env: Env, args) -> dict:
@@ -1081,6 +1583,19 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--exec-id", required=True)
     p.set_defaults(func=cmd_intake)
 
+    p = sub.add_parser(
+        "list-products",
+        help="list existing product codes from the design-asset library, for the form's product dropdown",
+    )
+    p.set_defaults(func=cmd_list_products)
+
+    p = sub.add_parser(
+        "list-listings",
+        help="list sticker-tool's own listings under one product code, for the form's listing dropdown",
+    )
+    p.add_argument("--prefix", required=True)
+    p.set_defaults(func=cmd_list_listings)
+
     p = sub.add_parser("process", help="build finished stickers (silhouette and border)")
     p.add_argument("--job", required=True)
     p.set_defaults(func=cmd_process)
@@ -1089,6 +1604,15 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--job", required=True)
     p.add_argument("--profile", default="default")
     p.set_defaults(func=cmd_nest)
+
+    p = sub.add_parser(
+        "apply-svg-layout",
+        help="re-render a sheet from a hand-edited copy of its Inkscape SVG",
+    )
+    p.add_argument("--job", required=True)
+    p.add_argument("--sku", required=True)
+    p.add_argument("--sheet", required=True)
+    p.set_defaults(func=cmd_apply_svg_layout)
 
     p = sub.add_parser("note-approval", help="record the approval link beside the staged job")
     p.add_argument("--job", required=True)

@@ -28,7 +28,13 @@ SAMPLE_VALUES = {
     "$execution.resumeFormUrl": "https://uranus.example.ts.net/form-waiting/1234?signature=abc",
     "$json.job_id": "job_0123456789ab",
     "$json.profile": "default",
+    # Set by "Validate chosen prefix", which throws unless the value matches
+    # ^[A-Z]{3}$ -- a raw form field (e.g. $json.Product) must never appear
+    # here directly, since a form POST can submit anything regardless of
+    # what the dropdown shows.
+    "$json.prefix": "ABC",
     "$('Parse intake').first().json.job_id": "job_0123456789ab",
+    "$('Summarize layout').first().json.job_id": "job_0123456789ab",
     "$json.execution.id": "1234",
     "$json.execution.lastNodeExecuted": "Process stickers",
 }
@@ -118,8 +124,15 @@ class WorkflowStructureTests(unittest.TestCase):
 
     def test_approval_choices_and_profiles_line_up(self):
         wf = load("sticker-job.workflow.json")
-        wait = next(n for n in wf["nodes"] if n["type"].endswith(".wait"))
-        options = [o["option"] for o in wait["parameters"]["formFields"]["values"][0]["fieldOptions"]["values"]]
+        # Several nodes are now type ".wait" (Choose product, Choose listing,
+        # Wait for approval): find the approval one by name, and its Decision
+        # field by label, rather than assuming it's the only wait node or the
+        # first form field.
+        wait = next(n for n in wf["nodes"] if n["name"] == "Wait for approval")
+        decision_field = next(
+            f for f in wait["parameters"]["formFields"]["values"] if f["fieldLabel"] == "Decision"
+        )
+        options = [o["option"] for o in decision_field["fieldOptions"]["values"]]
         switch = next(n for n in wf["nodes"] if n["type"].endswith(".switch"))
         rules = [r["conditions"]["conditions"][0]["rightValue"] for r in switch["parameters"]["rules"]["values"]]
         self.assertEqual(options, rules)

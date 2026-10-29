@@ -2,7 +2,34 @@
   "permissions": {
     "allow": [
       "Bash(mkdir -p /tmp/nix-shell.mQzdfE/claude-1000/-home-aquarius-Documents-nix-config-dev-nix-config/a5ee7136-4f26-4520-b08b-6cfa77700e73/scratchpad)",
-      "Bash(echo \"EXIT=$?\")"
+      "Bash(echo \"EXIT=$?\")",
+      "Bash(tailscale status *)",
+      "Bash(tailscale serve *)",
+      "Bash(curl -sS -o /dev/null -w \"HTTP %{http_code}\\\\n\" http://127.0.0.1:5678/)",
+      "Bash(curl -skS -o /dev/null -w \"HTTP %{http_code}\\\\n\" https://uranus.tail8bc.ts.net/)",
+      "Bash(nix --extra-experimental-features \"nix-command flakes\" develop .#default --command notify-send --help)",
+      "Bash(nix --extra-experimental-features \"nix-command flakes\" develop .#default --command bash -c \"command -v xdg-open\")",
+      "Bash(command -v notify-send)",
+      "Bash(notify-send --help)",
+      "Bash(systemctl show *)",
+      "Bash(journalctl -u podman-n8n-sticker.service --no-pager)",
+      "Bash(nix --extra-experimental-features \"nix-command flakes\" develop .#default --command python3 -m unittest discover -s sticker/tests -v -k test_sticker_tool)",
+      "Bash(command -v uuidgen)",
+      "Bash(uuidgen)",
+      "Bash(python3 -c \"import json; d=json.load\\(open\\('sticker/n8n/sticker-job.workflow.json'\\)\\); print\\(repr\\(d['nodes'][0]['parameters']['content'][:80]\\)\\)\")",
+      "Bash(nix --extra-experimental-features \"nix-command flakes\" develop .#default --command python3 -c \"import json; d=json.load\\(open\\('sticker/n8n/sticker-job.workflow.json'\\)\\); print\\(repr\\(d['nodes'][0]['parameters']['content'][:80]\\)\\)\")",
+      "Bash(nix --extra-experimental-features \"nix-command flakes\" develop .#default --command python3 -m unittest discover -s sticker/tests -v -k test_workflows)",
+      "Bash(nix --extra-experimental-features \"nix-command flakes\" develop .#default --command python3 /tmp/claude-1000/-home-aquarius-Documents-nix-config-dev-nix-config/a5ee7136-4f26-4520-b08b-6cfa77700e73/scratchpad/build_workflow.py)",
+      "Bash(cp \"/home/aquarius/Documents/Sticker Making/print then cut template/8.5x11 print then cut template.png\" sticker/boundaries/letter.png)",
+      "Bash(cp \"/home/aquarius/Documents/Sticker Making/print then cut template/11x17 print then cut template.png\" sticker/boundaries/tabloid.png)",
+      "Bash(systemctl *)",
+      "Bash(git commit -- hosts/mercury/tailscale.nix hosts/mercury/configuration.nix hosts/mercury/disko-zfs.nix hosts/mercury/sanoid.nix hosts/mercury/storage-permissions.nix hosts/mercury/samba-shares.nix hosts/mercury/outbox-sync.nix hosts/uranus/sticker-automation.nix hosts/uranus/STICKER-AUTOMATION.md README.md docs/ACCOUNTS.md TODO.md -m ' *)",
+      "Bash(echo \"exit=$?\")",
+      "WebSearch",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)",
+      "Bash(nix show-derivation *)",
+      "Read(//tmp/claude-1000/**)"
     ]
   }
 }

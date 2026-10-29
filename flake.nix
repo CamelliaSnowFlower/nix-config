@@ -87,14 +87,15 @@
     # Builds a standalone home-manager configuration for "<user>@<host>".
     # Both of your homeConfigurations were identical apart from the name,
     # so this keeps them in sync instead of hand-editing two copies.
-    mkHome = username: home-manager.lib.homeManagerConfiguration {
-      pkgs = nixpkgs.legacyPackages.x86_64-linux; # Home-manager requires 'pkgs' instance
-      extraSpecialArgs = {inherit inputs outputs;};
-      modules = [
-        # > Our main home-manager configuration file <
-        ./home-manager/${username}/default.nix
-      ];
-    };
+    mkHome = username:
+      home-manager.lib.homeManagerConfiguration {
+        pkgs = nixpkgs.legacyPackages.x86_64-linux; # Home-manager requires 'pkgs' instance
+        extraSpecialArgs = {inherit inputs outputs;};
+        modules = [
+          # > Our main home-manager configuration file <
+          ./home-manager/${username}/default.nix
+        ];
+      };
   in {
     # Your custom packages
     # Accessible through 'nix build', 'nix shell', etc
