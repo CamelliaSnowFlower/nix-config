@@ -137,6 +137,13 @@ in {
       PathExists = "/var/lib/sticker-automation/last-error.json";
       PathChanged = "/var/lib/sticker-automation/last-error.json";
       Unit = "sticker-workflow-error-notification.service";
+      # PathExists and PathChanged both re-evaluate true at once when the
+      # file already exists at unit start (e.g. every home-manager switch),
+      # firing several near-simultaneous triggers that blow past the
+      # service's StartLimitBurst and land both units in a failed state.
+      # Coalesce those into at most one trigger per window.
+      TriggerLimitIntervalSec = "10s";
+      TriggerLimitBurst = 1;
     };
     Install.WantedBy = ["default.target"];
   };
@@ -159,6 +166,9 @@ in {
       PathExists = "/run/mercury-smb-mounts.status";
       PathChanged = "/run/mercury-smb-mounts.status";
       Unit = "mercury-smb-mount-notification.service";
+      # See the matching comment on sticker-workflow-error-notification.path.
+      TriggerLimitIntervalSec = "10s";
+      TriggerLimitBurst = 1;
     };
     Install.WantedBy = ["default.target"];
   };
@@ -185,6 +195,9 @@ in {
       PathExists = "/var/lib/sticker-automation/latest-approval.json";
       PathChanged = "/var/lib/sticker-automation/latest-approval.json";
       Unit = "sticker-approval-notification.service";
+      # See the matching comment on sticker-workflow-error-notification.path.
+      TriggerLimitIntervalSec = "10s";
+      TriggerLimitBurst = 1;
     };
     Install.WantedBy = ["default.target"];
   };
