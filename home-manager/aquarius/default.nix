@@ -30,11 +30,11 @@
     unstable.enable = true;
   };
 
-  # startupprograms
-  xsession.windowManager.bspwm.enable = true;
-  xsession.windowManager.bspwm.startupPrograms = [
-    "obsidian"
-    "spotify"
+  # GNOME autostart - bspwm isn't used, GNOME is.
+  xdg.autostart.enable = true;
+  xdg.autostart.entries = [
+    "${pkgs.obsidian}/share/applications/obsidian.desktop"
+    "${pkgs.spotify}/share/applications/spotify.desktop"
   ];
 
   # Enable home-manager

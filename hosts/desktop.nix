@@ -28,9 +28,6 @@
     pulse.enable = true;
   };
 
-  # Enable fingerprint services
-  services.fprintd.enable = true;
-
   # Install firefox.
   programs.firefox.enable = true;
 

@@ -15,6 +15,9 @@
 
   networking.hostName = "saturn"; # Define your hostname.
 
+  # Fingerprint reader - saturn-only hardware, moved out of ../desktop.nix.
+  services.fprintd.enable = true;
+
   # Define a user account. Don't forget to set a password with ‘passwd’.
   users.users.aquarius = {
     isNormalUser = true;

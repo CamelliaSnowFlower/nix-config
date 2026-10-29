@@ -11,7 +11,6 @@
     ./hardware-configuration.nix
     ../common.nix
     ../desktop.nix
-    #./nvidia.nix
     ./AMD.nix
     ./steam.nix
     #./obs.nix
