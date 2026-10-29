@@ -76,7 +76,14 @@
 #        y) Yes this is OK
 #        q) Quit config
 #
-# 4. Test the sync by hand and check the result:
+# 4. Preview first, then test the real sync by hand:
+#        sudo systemctl start outbox-sync-preview.service
+#        journalctl -u outbox-sync-preview.service -o cat
+#    The preview is a dry run of the exact same command (nothing is
+#    changed on Drive). Each file it would delete is logged as
+#    "Skipped delete"; count them with
+#        journalctl -u outbox-sync-preview.service -o cat | grep -c "Skipped delete"
+#    When the preview looks right:
 #        sudo systemctl start outbox-sync.service
 #        journalctl -u outbox-sync.service -e
 #    (Put a test file in the outbox first. An empty outbox is fine too
@@ -111,6 +118,43 @@
   outbox = "/mnt/storage/outbox";
   remote = "gdrive:Outbox"; # "gdrive" = remote name from step 3
   configFile = "/var/lib/rclone/rclone.conf";
+
+  # One command line shared by the real sync and the preview, so the preview
+  # always reflects exactly what the real run would do.
+  syncCommand = extraArgs:
+    lib.concatStringsSep " " ([
+        "${pkgs.rclone}/bin/rclone"
+        "sync"
+        outbox
+        remote
+        "--config ${configFile}"
+        # Sticker jobs stage beneath the outbox share so final renames are
+        # same-filesystem, but unfinished work must never be mirrored to Drive.
+        "--exclude /.staging/**"
+        "--max-delete 100"
+      ]
+      ++ extraArgs);
+
+  # Hardening - the service only needs to read the outbox, write
+  # its own token refreshes, and talk to the network.
+  syncServiceConfig = {
+    Type = "oneshot";
+    User = "rclone-sync";
+    Group = "rclone-sync";
+
+    # Refuse to run if the dataset isn't mounted: syncing an empty
+    # directory would wipe everything on Drive.
+    ExecStartPre = "${pkgs.util-linux}/bin/mountpoint -q ${outbox}";
+
+    ProtectSystem = "strict";
+    ProtectHome = true;
+    PrivateTmp = true;
+    PrivateDevices = true;
+    NoNewPrivileges = true;
+    ProtectKernelTunables = true;
+    ProtectControlGroups = true;
+    ReadWritePaths = ["/var/lib/rclone"];
+  };
 in {
   environment.systemPackages = [pkgs.rclone];
 
@@ -133,37 +177,28 @@ in {
     # Don't start unless the remote has actually been configured
     # (step 3), so a fresh rebuild doesn't spam failures.
     unitConfig.ConditionPathExists = configFile;
-    serviceConfig = {
-      Type = "oneshot";
-      User = "rclone-sync";
-      Group = "rclone-sync";
+    serviceConfig = syncServiceConfig // {ExecStart = syncCommand [];};
+  };
 
-      # Refuse to run if the dataset isn't mounted: syncing an empty
-      # directory would wipe everything on Drive.
-      ExecStartPre = "${pkgs.util-linux}/bin/mountpoint -q ${outbox}";
-      ExecStart = lib.concatStringsSep " " [
-        "${pkgs.rclone}/bin/rclone"
-        "sync"
-        outbox
-        remote
-        "--config ${configFile}"
-        # Sticker jobs stage beneath the outbox share so final renames are
-        # same-filesystem, but unfinished work must never be mirrored to Drive.
-        "--exclude /.staging/**"
-        "--max-delete 100"
-      ];
-
-      # Hardening - the service only needs to read the outbox, write
-      # its own token refreshes, and talk to the network.
-      ProtectSystem = "strict";
-      ProtectHome = true;
-      PrivateTmp = true;
-      PrivateDevices = true;
-      NoNewPrivileges = true;
-      ProtectKernelTunables = true;
-      ProtectControlGroups = true;
-      ReadWritePaths = ["/var/lib/rclone"];
-    };
+  # Dry run of the exact same command: nothing is copied, changed, or
+  # deleted on Drive. Start it by hand before trusting the timer, and again
+  # before any large reorganisation of the outbox:
+  #     sudo systemctl start outbox-sync-preview.service
+  #     journalctl -u outbox-sync-preview.service -o cat
+  # Each file rclone would remove from Drive appears as a "Skipped delete"
+  # line, so a quick count is:
+  #     journalctl -u outbox-sync-preview.service -o cat | grep -c "Skipped delete"
+  # Nothing starts this unit automatically.
+  systemd.services.outbox-sync-preview = {
+    description = "Preview (dry run) of the outbox -> Google Drive sync";
+    after = ["zfs-mount.service" "network-online.target"];
+    wants = ["network-online.target"];
+    unitConfig.ConditionPathExists = configFile;
+    serviceConfig =
+      syncServiceConfig
+      // {
+        ExecStart = syncCommand ["--dry-run" "-v" "--stats-one-line"];
+      };
   };
 
   systemd.timers.outbox-sync = {
@@ -178,7 +213,8 @@ in {
   # ---------------------------------------------------------------
   # Getting files INTO the outbox: a Samba share, same pattern as the
   # Shop-* shares in samba-shares.nix. Delete this block (and the
-  # tmpfiles rule below) if you'd rather copy files in over SSH.
+  # /mnt/storage/outbox entry in storage-permissions.nix) if you'd
+  # rather copy files in over SSH.
   # ---------------------------------------------------------------
   services.samba.settings."Shop-Outbox" = {
     path = outbox;
@@ -192,19 +228,6 @@ in {
     "force group" = "users";
   };
 
-  # The new dataset is created root:root 0755 by disko-zfs; make it
-  # group-writable for "users" (setgid so new files inherit the group).
-  # rclone-sync only needs read access, which 0755 "other" already gives.
-  systemd.tmpfiles.rules = [
-    "z ${outbox} 2775 root users - -"
-  ];
-
-  # Same ordering as in samba-shares.nix: tmpfiles must run after ZFS has
-  # mounted the pool, or it would set permissions on the bare mountpoint
-  # directory that then gets mounted over. Duplicating this is harmless
-  # (the lists merge) and keeps this module working on its own.
-  systemd.services.systemd-tmpfiles-setup = {
-    after = ["zfs-mount.service"];
-    wants = ["zfs-mount.service"];
-  };
+  # The dataset root's ownership and mode (group-writable for "users", setgid)
+  # are set by storage-permissions.nix.
 }

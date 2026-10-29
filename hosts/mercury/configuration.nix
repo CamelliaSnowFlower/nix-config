@@ -18,6 +18,7 @@
     ./storage-pool.nix
     ./disko-zfs.nix
     ./sanoid.nix
+    ./storage-permissions.nix
     ./samba-shares.nix
     ./minecraft-server.nix
     ./minecraft-backup.nix
@@ -33,7 +34,7 @@
   networking.hostId = "6d778fb4";
   # allow zfs to handle importing?
   systemd.services.zfs-mount.enable = true;
-  boot.zfs.extraPools = [ "storage" ];
+  boot.zfs.extraPools = ["storage"];
   # Only root import is a data-loss risk; root's on plain ext4 here.
   boot.zfs.forceImportRoot = false;
   # This is what caused the boot failure: the running kernel had no
@@ -43,7 +44,6 @@
   # nixpkgs revision actually supports fixes it now and keeps it from
   # recurring as nixpkgs updates over time.
   boot.kernelPackages = pkgs.linuxPackages;
- 
 
   # aquarius's key from uranus - lets you SSH in from uranus without a
   # password, and means root access survives a reinstall without

@@ -1,0 +1,962 @@
+{
+  "name": "Sticker intake and sheet generation",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## Sticker intake and sheet generation\\n\\nImported from sticker/n8n/ in the nix-config repo. This file was generated without access to an n8n instance: after importing, open each node and confirm its settings, then run a test submission with disposable art.\\n\\nAll processing is done by the `sticker-tool` command. Customer text is never placed in a command line.\\n\\nSet this workflow's Error Workflow (Settings) to 'Sticker error notify'.\\n\\n'Product' and 'Existing listing' are plain text fields, not dropdowns -- this n8n's Form/Wait node could not set a dropdown's option list from an expression (confirmed: the expression only ever reached Default Value, never Field Options -> Values). Leave either field blank to mean \"new\": blank Product + filled New product letters starts a brand-new product; blank Existing listing starts the next new listing under an already-known product. Typed values are re-validated against the real list in a Code node before anything reaches a command line.\\n\\n'Product' is deliberately read from a different place than 'Existing listing'. list-products scans the read-only design-asset library (Shop-Assets, by folder name only -- it is the business's real, pre-existing catalog) for which 3-letter codes exist at all. list-listings then scans sticker-tool's own outbox for what has actually been produced under the one chosen prefix -- most prefixes will show no existing listings yet, since the asset library predates this tool.\\n\\nThe approval form's Sheet previews field uses an html field type to embed the preview JPGs as base64 -- unverified against a live n8n, confirm it actually renders images rather than raw HTML text.\\n\\nHand-adjusting a layout: open the exported <SKU>_<sheet>.svg from staging in Inkscape, move pieces (no rotate/scale/skew), then run `sticker-tool apply-svg-layout --job <id> --sku <SKU> --sheet <type>` by hand. That command is not wired into the approval dropdown yet -- it is a manual follow-up step, not part of this workflow.",
+        "height": 420,
+        "width": 520
+      },
+      "id": "067519ea-7e95-5f6c-8403-e43faed98f17",
+      "name": "Read me",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -60,
+        -340
+      ]
+    },
+    {
+      "parameters": {
+        "formTitle": "New sticker listing",
+        "formDescription": "Upload the artwork for ONE new listing. Each file becomes one variation (V001, V002, ...) of the next listing number.",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "Sticker files",
+              "fieldType": "file",
+              "multipleFiles": true,
+              "acceptFileTypes": ".png,.jpg,.jpeg",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Sticker size (inches, longest side)",
+              "fieldType": "number",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Sheet types",
+              "fieldType": "checkbox",
+              "fieldOptions": {
+                "values": [
+                  {
+                    "option": "letter"
+                  },
+                  {
+                    "option": "tabloid"
+                  }
+                ]
+              },
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Quantity (optional)",
+              "fieldType": "number"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "57c5125d-d16a-5c97-8761-649f263aedae",
+      "name": "Sticker intake form",
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "webhookId": "ef039801-b8b9-5e80-b740-4be3f75daf41"
+    },
+    {
+      "parameters": {
+        "command": "sticker-tool list-products"
+      },
+      "id": "166a98a7-1115-4d1e-9910-0c7ff8b3a9c8",
+      "name": "List products",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        240,
+        0
+      ],
+      "executeOnce": true
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{ json: JSON.parse($input.first().json.stdout) }];"
+      },
+      "id": "1157ca76-695b-415b-a378-06e29608e936",
+      "name": "Parse products",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        480,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "resume": "form",
+        "formTitle": "Choose a product",
+        "formDescription": "=Existing products: {{ $('Parse products').first().json.prefixes.join(', ') }}\\n\\nType one of those three-letter codes into Product to add to an existing product, or leave Product blank and fill in New product letters below to start a brand-new one.",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "Product",
+              "fieldType": "text",
+              "requiredField": false
+            },
+            {
+              "fieldLabel": "New product letters (fill in only if Product above is left blank)",
+              "fieldType": "text",
+              "requiredField": false
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "c7b44ff9-3f58-4342-b559-41be5740a3dc",
+      "name": "Choose product",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        720,
+        0
+      ],
+      "webhookId": "53e3e3db-008a-4b3b-b8ea-0a982680ba0e"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "110d11b2-9c7b-453e-b3b3-4fbfca8b0176",
+              "leftValue": "={{ $json.Product }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "b959b7e0-8463-43ab-8656-46975445ac3b",
+      "name": "Is new product?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        960,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const raw = String($json['New product letters (fill in only if Product above is left blank)'] || '').trim().toUpperCase();\nif (!/^[A-Z]{3}$/.test(raw)) {\n  throw new Error('Enter exactly three letters for the new product, e.g. XYZ.');\n}\nconst known = $('Parse products').first().json.prefixes;\nif (known.includes(raw)) {\n  throw new Error(`\"${raw}\" already exists -- leave New product letters blank and type it into Product instead.`);\n}\nreturn [{ json: { prefix: raw, listing: null } }];"
+      },
+      "id": "27443cd9-4fa5-4fa0-9eb9-ab98d376be4f",
+      "name": "Validate new product letters",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1200,
+        -160
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Re-validate the typed value against the real catalog before it ever\n// reaches a command line -- the same trust-boundary rule sticker-tool\n// itself enforces for every other piece of form/customer input.\nconst raw = String($json.Product || '').trim().toUpperCase();\nconst known = $('Parse products').first().json.prefixes;\nif (!/^[A-Z]{3}$/.test(raw) || !known.includes(raw)) {\n  throw new Error(`\"${raw}\" is not an existing product. Valid codes: ${known.join(', ')}`);\n}\nreturn [{ json: { prefix: raw } }];"
+      },
+      "id": "f1a2b3c4-5d6e-4f70-8a8b-9c0d1e2f3a5c",
+      "name": "Validate chosen prefix",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1200,
+        160
+      ]
+    },
+    {
+      "parameters": {
+        "command": "=sticker-tool list-listings --prefix {{ $json.prefix }}"
+      },
+      "id": "2f977545-cb2b-4cfd-9357-7c9c752cf0b6",
+      "name": "List listings for prefix",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        1440,
+        160
+      ],
+      "executeOnce": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const prefix = $('Validate chosen prefix').first().json.prefix;\nconst listings = JSON.parse($input.first().json.stdout).listings;\nreturn [{ json: { prefix, listings } }];"
+      },
+      "id": "e9c1a2b3-4d5e-4f60-8a7b-9c0d1e2f3a4b",
+      "name": "Parse listings",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1680,
+        160
+      ]
+    },
+    {
+      "parameters": {
+        "resume": "form",
+        "formTitle": "Choose a listing",
+        "formDescription": "=Existing listings under {{ $('Parse listings').first().json.prefix }}: {{ $('Parse listings').first().json.listings.map((l) => `${l.sku_root} (${l.variations} variation(s))`).join(', ') || 'none yet' }}\\n\\nType one of those SKUs to add a variation to it, or leave this blank to start the next new listing under this product.",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "Existing listing",
+              "fieldType": "text",
+              "requiredField": false
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "fc7a38f0-5f75-499a-a3a4-2bc34cde9da9",
+      "name": "Choose listing",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        1920,
+        160
+      ],
+      "webhookId": "10277711-ef62-4d91-bd69-92cdd718b50d"
+    },
+    {
+      "parameters": {
+        "jsCode": "const prefix = $('Parse listings').first().json.prefix;\nconst typed = String($json['Existing listing'] || '').trim().toUpperCase();\nif (!typed) {\n  return [{ json: { prefix, listing: null } }];\n}\nconst listings = $('Parse listings').first().json.listings;\nconst match = typed.match(/^([A-Z]{3})([0-9]{3})$/);\nconst known = listings.map((l) => l.sku_root);\nif (!match || match[1] !== prefix || !known.includes(typed)) {\n  throw new Error(`\"${typed}\" is not an existing listing under ${prefix}. Valid: ${known.join(', ') || '(none yet)'}`);\n}\nreturn [{ json: { prefix, listing: Number(match[2]) } }];"
+      },
+      "id": "94ee16d2-8e40-4e02-bd83-2f63cbe25e1d",
+      "name": "Decide listing",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2160,
+        160
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{ json: $input.first().json }];"
+      },
+      "id": "805be8e1-8f27-431f-87e1-f90b2e3e1291",
+      "name": "Resolve product choice",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1920,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "command": "=sticker-tool mkincoming --exec-id {{ $execution.id }}"
+      },
+      "id": "9d51efac-ac73-5f6e-8db2-07d598b2b3ba",
+      "name": "Make incoming folder",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        2160,
+        0
+      ],
+      "executeOnce": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const form = $('Sticker intake form').first();\nconst choice = $('Resolve product choice').first().json;\nconst allowed = { 'image/png': 'png', 'image/jpeg': 'jpg' };\nconst files = [];\nconst out = [];\n\n// One item per accepted upload. Only the extension is taken from the MIME\n// type (allow-list); the stored name is always a server-made 001.png style\n// name. Original names travel in request.json as data, never in a command.\nfor (const [, binary] of Object.entries(form.binary || {})) {\n  const extension = allowed[binary.mimeType];\n  if (!extension) continue;\n  const name = String(files.length + 1).padStart(3, '0') + '.' + extension;\n  files.push({ file: name, original_name: String(binary.fileName || '') });\n  out.push({ json: { targetName: name }, binary: { data: binary } });\n}\n\nconst quantity = form.json['Quantity (optional)'];\nconst request = {\n  size_in: Number(form.json['Sticker size (inches, longest side)']),\n  sheets: [].concat(form.json['Sheet types'] || []),\n  // An empty Quantity field submits as 0 in this n8n version, not '' or\n  // null/undefined -- and 0 is never a valid quantity anyway (sticker-tool\n  // requires >= 1 when given at all), so treat it the same as not provided.\n  quantity: quantity ? Number(quantity) : null,\n  files,\n  prefix: choice.prefix,\n  listing: choice.listing,\n};\n\nconst requestFile = await this.helpers.prepareBinaryData(\n  Buffer.from(JSON.stringify(request)), 'request.json', 'application/json');\nout.push({ json: { targetName: 'request.json' }, binary: { data: requestFile } });\nreturn out;"
+      },
+      "id": "0a71e323-a6fd-5b37-824a-1835bd49d0aa",
+      "name": "Prepare files",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2400,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "write",
+        "fileName": "=/data/state/incoming/{{ $execution.id }}/{{ $json.targetName }}",
+        "dataPropertyName": "data",
+        "options": {}
+      },
+      "id": "c486942e-75d8-51da-8914-35aa5eee6369",
+      "name": "Save uploads",
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "position": [
+        2640,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "command": "=sticker-tool intake --exec-id {{ $execution.id }}"
+      },
+      "id": "f0787abf-c515-579a-a68c-e7eae03f4e24",
+      "name": "Reserve and stage",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        2880,
+        0
+      ],
+      "executeOnce": true
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{ json: JSON.parse($input.first().json.stdout) }];"
+      },
+      "id": "80d7afeb-cc89-5d32-b12e-ef9d6ab0b213",
+      "name": "Parse intake",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3120,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "command": "=sticker-tool process --job {{ $json.job_id }}"
+      },
+      "id": "c4c6a702-b7fb-5d34-a649-4b49250bae01",
+      "name": "Process stickers",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        3360,
+        0
+      ],
+      "executeOnce": true
+    },
+    {
+      "parameters": {
+        "jsCode": "// First pass has no Decision, so the default profile is used. The re-run\n// choices from the approval form map to fixed profile names in sticker-tool.\nconst decision = $input.first().json.Decision;\nconst profiles = {\n  'Re-run with a wider gap': 'wide-gap',\n  'Re-run with more rotations': 'more-rotations',\n};\nreturn [{ json: {\n  job_id: $('Parse intake').first().json.job_id,\n  profile: profiles[decision] || 'default',\n} }];"
+      },
+      "id": "a4fa68e2-728a-57a9-a583-f00d6775d1f8",
+      "name": "Choose profile",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3600,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "command": "=sticker-tool nest --job {{ $json.job_id }} --profile {{ $json.profile }}"
+      },
+      "id": "75565d6d-323c-51ec-a70b-027d7ab9f619",
+      "name": "Nest sheets",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        3840,
+        0
+      ],
+      "executeOnce": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const result = JSON.parse($input.first().json.stdout);\nconst lines = result.sheets.map((s) =>\n  `${s.sku} ${s.sheet}: ${s.copies} copies, ${s.fill_percent}% filled` +\n  (s.sheets_needed ? `, ${s.sheets_needed} sheet(s) for the order` : ''));\nreturn [{ json: {\n  job_id: result.job_id,\n  profile: result.profile,\n  summary_text: lines.join('\\n'),\n  sheets: result.sheets,\n} }];"
+      },
+      "id": "fe64f61e-c57c-5d17-b18b-79db96d49f0e",
+      "name": "Summarize layout",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        4080,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return $('Summarize layout').first().json.sheets.map((s) => ({ json: s }));"
+      },
+      "id": "8039abdd-d3ed-4ce9-95fa-72f3ae8ed079",
+      "name": "Split sheets",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        4320,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "read",
+        "fileSelector": "=/data/outbox/.staging/{{ $('Parse intake').first().json.job_id }}/{{ $json.preview }}",
+        "options": {}
+      },
+      "id": "61101c5a-42b2-4439-8fd6-c59e3d284ce6",
+      "name": "Read preview image",
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "position": [
+        4560,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const parts = $input.all().map((item) => {\n  const binary = item.binary.data;\n  return `<div style=\"margin-bottom:8px\"><strong>${item.json.sku} ${item.json.sheet}</strong> -- ${item.json.copies} copies, ${item.json.fill_percent}% filled<br/>` +\n    `<img src=\"data:${binary.mimeType};base64,${binary.data}\" style=\"max-width:420px;border:1px solid #ccc\"/></div>`;\n});\nreturn [{ json: { preview_html: parts.join('') } }];"
+      },
+      "id": "4bc60e39-d544-41c5-9f78-c107b364bcfd",
+      "name": "Combine previews HTML",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        4800,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "command": "=sticker-tool note-approval --job {{ $('Summarize layout').first().json.job_id }} --url \"{{ $execution.resumeFormUrl }}\""
+      },
+      "id": "882eea5d-a743-5dff-b624-50a2ad585309",
+      "name": "Save approval link",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        5040,
+        0
+      ],
+      "executeOnce": true
+    },
+    {
+      "parameters": {
+        "resume": "form",
+        "formTitle": "Approve sticker sheets",
+        "formDescription": "=Job {{ $('Summarize layout').first().json.job_id }} (profile: {{ $('Summarize layout').first().json.profile }})\\n\\nOpen the preview images in Shop-Outbox/.staging/{{ $('Summarize layout').first().json.job_id }} to review the layout.\\n\\n{{ $('Summarize layout').first().json.summary_text }}",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "Sheet previews",
+              "fieldType": "html",
+              "html": "={{ $('Combine previews HTML').first().json.preview_html }}"
+            },
+            {
+              "fieldLabel": "Decision",
+              "fieldType": "dropdown",
+              "fieldOptions": {
+                "values": [
+                  {
+                    "option": "Approve and publish"
+                  },
+                  {
+                    "option": "Re-run with a wider gap"
+                  },
+                  {
+                    "option": "Re-run with more rotations"
+                  },
+                  {
+                    "option": "Reject and discard"
+                  }
+                ]
+              },
+              "requiredField": true
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "7e247d20-8100-5e6a-8d28-6456b7510734",
+      "name": "Wait for approval",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        5280,
+        0
+      ],
+      "webhookId": "720168b3-7dbe-5180-b12d-f6df01986504"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict"
+                },
+                "conditions": [
+                  {
+                    "id": "db0d3dea-e3a7-5395-bbe9-8b4167fb8e43",
+                    "leftValue": "={{ $json.Decision }}",
+                    "rightValue": "Approve and publish",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Approve"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict"
+                },
+                "conditions": [
+                  {
+                    "id": "cc209588-4a19-59d1-b593-31857862f470",
+                    "leftValue": "={{ $json.Decision }}",
+                    "rightValue": "Re-run with a wider gap",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Wider gap"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict"
+                },
+                "conditions": [
+                  {
+                    "id": "f457eae0-654a-5edd-869e-7bf64574fe4a",
+                    "leftValue": "={{ $json.Decision }}",
+                    "rightValue": "Re-run with more rotations",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "More rotations"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict"
+                },
+                "conditions": [
+                  {
+                    "id": "28aa7ec1-6036-5b98-8e69-0becae353a72",
+                    "leftValue": "={{ $json.Decision }}",
+                    "rightValue": "Reject and discard",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Reject"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "b10ff40a-175f-5296-9e45-0044cfb2b1d8",
+      "name": "Decision",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3,
+      "position": [
+        5520,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "command": "=sticker-tool commit --job {{ $('Parse intake').first().json.job_id }}"
+      },
+      "id": "d64cff1e-5dfb-5f5d-ab82-77ed1d2930d1",
+      "name": "Commit job",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        5760,
+        -140
+      ],
+      "executeOnce": true
+    },
+    {
+      "parameters": {
+        "command": "=sticker-tool reject --job {{ $('Parse intake').first().json.job_id }}"
+      },
+      "id": "ae34e9fd-c7f9-5f48-b378-6ea74f601046",
+      "name": "Reject job",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        5760,
+        220
+      ],
+      "executeOnce": true
+    }
+  ],
+  "connections": {
+    "Sticker intake form": {
+      "main": [
+        [
+          {
+            "node": "List products",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "List products": {
+      "main": [
+        [
+          {
+            "node": "Parse products",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse products": {
+      "main": [
+        [
+          {
+            "node": "Choose product",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Choose product": {
+      "main": [
+        [
+          {
+            "node": "Is new product?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is new product?": {
+      "main": [
+        [
+          {
+            "node": "Validate new product letters",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Validate chosen prefix",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate new product letters": {
+      "main": [
+        [
+          {
+            "node": "Resolve product choice",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate chosen prefix": {
+      "main": [
+        [
+          {
+            "node": "List listings for prefix",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "List listings for prefix": {
+      "main": [
+        [
+          {
+            "node": "Parse listings",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse listings": {
+      "main": [
+        [
+          {
+            "node": "Choose listing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Choose listing": {
+      "main": [
+        [
+          {
+            "node": "Decide listing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Decide listing": {
+      "main": [
+        [
+          {
+            "node": "Resolve product choice",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Resolve product choice": {
+      "main": [
+        [
+          {
+            "node": "Make incoming folder",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Make incoming folder": {
+      "main": [
+        [
+          {
+            "node": "Prepare files",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare files": {
+      "main": [
+        [
+          {
+            "node": "Save uploads",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save uploads": {
+      "main": [
+        [
+          {
+            "node": "Reserve and stage",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reserve and stage": {
+      "main": [
+        [
+          {
+            "node": "Parse intake",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse intake": {
+      "main": [
+        [
+          {
+            "node": "Process stickers",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Process stickers": {
+      "main": [
+        [
+          {
+            "node": "Choose profile",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Choose profile": {
+      "main": [
+        [
+          {
+            "node": "Nest sheets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Nest sheets": {
+      "main": [
+        [
+          {
+            "node": "Summarize layout",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Summarize layout": {
+      "main": [
+        [
+          {
+            "node": "Split sheets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split sheets": {
+      "main": [
+        [
+          {
+            "node": "Read preview image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read preview image": {
+      "main": [
+        [
+          {
+            "node": "Combine previews HTML",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Combine previews HTML": {
+      "main": [
+        [
+          {
+            "node": "Save approval link",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save approval link": {
+      "main": [
+        [
+          {
+            "node": "Wait for approval",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait for approval": {
+      "main": [
+        [
+          {
+            "node": "Decision",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Decision": {
+      "main": [
+        [
+          {
+            "node": "Commit job",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Choose profile",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Choose profile",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Reject job",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {}
+}

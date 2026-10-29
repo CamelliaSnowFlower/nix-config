@@ -6,12 +6,13 @@
 # card, libvirtd). The VM itself still needs to be created once
 # through virt-manager.
 #
-# --- Before rebuilding ---
-# Fill in the placeholder PCI IDs below. Find them with:
+# --- PCI IDs ---
+# The vfio-pci.ids below are already filled in for this machine's 1050 Ti
+# (its VGA controller and HDMI audio function). If the card is ever
+# replaced or moved, re-check them with:
 #   lspci -nn | grep -i nvidia
-# You'll get two lines for the 1050 Ti - the VGA controller and its
-# HDMI audio function. Copy both "vendor:device" IDs (the bit in
-# square brackets, e.g. 10de:1c82) into the vfio-pci.ids list.
+# and copy both "vendor:device" IDs (the bit in square brackets, e.g.
+# 10de:1c82) into the vfio-pci.ids list.
 #
 # --- After rebuilding and rebooting ---
 # 1. Confirm the card is bound to vfio-pci, not nouveau:

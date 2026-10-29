@@ -1,4 +1,3 @@
-
 {
   config,
   inputs,
@@ -21,27 +20,27 @@
     targets.gtksourceview.enable = false;
 
     image = ./TADC.jpg;
-    polarity ="dark";
+    polarity = "dark";
     fonts = {
       serif = {
-      package = pkgs.scientifica;
-      name = "Scientifica Serif";
+        package = pkgs.scientifica;
+        name = "Scientifica Serif";
       };
 
       sansSerif = {
-      package = pkgs.scientifica;
-      name = "Scientifica Sans";
+        package = pkgs.scientifica;
+        name = "Scientifica Sans";
       };
 
       monospace = {
-      package = pkgs.dejavu_fonts;
-      name = "DejaVu Sans Mono";
+        package = pkgs.dejavu_fonts;
+        name = "DejaVu Sans Mono";
       };
-      
+
       emoji = {
-      package = pkgs.noto-fonts-color-emoji;
-      name = "Noto Color Emoji";
+        package = pkgs.noto-fonts-color-emoji;
+        name = "Noto Color Emoji";
       };
     };
-};
+  };
 }

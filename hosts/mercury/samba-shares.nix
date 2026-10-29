@@ -1,6 +1,9 @@
 # samba-shares.nix
-{ config, pkgs, ... }: {
-
+{
+  config,
+  pkgs,
+  ...
+}: {
   # 1. Enable the Samba service
   services.samba = {
     enable = true;
@@ -13,9 +16,9 @@
         "server string" = "Sticker Shop NAS";
         "netbios name" = "shopnas";
         "security" = "user";
-        
+
         # Security: Prevent anonymous guest access to your business files
-        "invalid users" = [ "root" ];
+        "invalid users" = ["root"];
         "guest account" = "nobody";
         "map to guest" = "Bad User";
 
@@ -58,7 +61,7 @@
 
       # 4. Network Share for STL/3MF 3D print models
       "Shop-3DModels" = {
-        "path" = "/mnt/storage/shop-3d"; 
+        "path" = "/mnt/storage/shop-3d";
         # Fixed to match your ZFS dataset path
         "browseable" = "yes";
         "read only" = "no";
@@ -89,7 +92,7 @@
         "browseable" = "yes";
         "read only" = "no";
         "guest ok" = "no";
-        "create mask" = "0600";    # Restricts file access purely to the creator
+        "create mask" = "0600"; # Restricts file access purely to the creator
         "directory mask" = "0700"; # Restricts folder exploration for privacy
         "force group" = "users";
       };
@@ -102,34 +105,8 @@
     openFirewall = true;
   };
 
-  # 3. Fix dataset mountpoint ownership/permissions on every boot.
-  #
-  # disko-zfs creates new datasets as root:root 0755 - Samba's "force
-  # group"/"force create mode"/"force directory mode" only apply to
-  # files and folders Samba itself creates *inside* a share, never
-  # retroactively to the share's own root directory. Without this,
-  # any collaborative share (new or freshly recreated) starts out
-  # unwritable by gubby/aquarius even though everything created
-  # underneath it would inherit the right permissions.
-  #
-  # 2775 = group-writable + setgid, so anything created directly at
-  # the dataset root also inherits the "users" group.
-  systemd.tmpfiles.rules = [
-    "z /mnt/storage/shop-designs 2775 root users - -"
-    "z /mnt/storage/shop-assets 2775 root users - -"
-    "z /mnt/storage/shop-3d 2775 root users - -"
-    "z /mnt/storage/shop-videos 2775 root users - -"
-    # Shop-Accounting deliberately excluded - stays root-owned/private.
-  ];
-
-  # tmpfiles normally runs early in boot, before the ZFS pool is
-  # mounted - without this ordering it'd either fail (path doesn't
-  # exist yet) or silently set permissions on a directory that gets
-  # unmounted-over a moment later. Run it only after zfs-mount.service
-  # (enabled in configuration.nix) has done its job.
-  systemd.services.systemd-tmpfiles-setup = {
-    after = [ "zfs-mount.service" ];
-    wants = [ "zfs-mount.service" ];
-  };
+  # 3. Ownership and mode of each dataset root are set by
+  # storage-permissions.nix (a service ordered after zfs-mount.service),
+  # which replaced the old tmpfiles rules. Shop-Accounting is deliberately
+  # not managed there and stays root-owned/private.
 }
-

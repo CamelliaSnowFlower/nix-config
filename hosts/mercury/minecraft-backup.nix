@@ -6,78 +6,79 @@
 # waste backup space) onto the storage pool. Deliberately not exposed
 # over Samba - restore is a manual/SSH job, not something to browse
 # from a Windows client.
-{ config, pkgs, lib, ... }: let
+{
+  config,
+  pkgs,
+  lib,
+  ...
+}: let
   serverName = "sticker-shop";
   serverDataDir = "/srv/minecraft-servers/${serverName}";
-  backupRoot = "/mnt/storage/minecraft-backups/${serverName}";
+  backupDataset = "/mnt/storage/minecraft-backups";
+  backupRoot = "${backupDataset}/${serverName}";
   sock = "/run/minecraft/${serverName}.sock";
 
   # How many past backups to keep on disk (8 weekly ~= 2 months).
   keepBackups = 8;
 
+  # The backup logic lives in minecraft-backup.sh so it can be tested with
+  # stubs (sticker/tests/test_shell_scripts.py). Paths come from the unit's
+  # environment below.
   backupScript = pkgs.writeShellApplication {
     name = "minecraft-backup-${serverName}";
-    runtimeInputs = [ pkgs.tmux pkgs.rsync pkgs.coreutils pkgs.findutils ];
+    runtimeInputs = with pkgs; [
+      tmux
+      rsync
+      coreutils
+      findutils
+      gnugrep
+    ];
+    text = builtins.readFile ./minecraft-backup.sh;
+  };
+
+  # Runs as root before each backup. The backup directory is created only if
+  # the ZFS dataset is really mounted, so a failed mount can never cause
+  # backups to be written to (and hidden on) the root filesystem.
+  prepareBackupDir = pkgs.writeShellApplication {
+    name = "minecraft-backup-prepare";
+    runtimeInputs = with pkgs; [
+      coreutils
+      util-linux
+    ];
     text = ''
-      timestamp="$(date +%Y-%m-%d_%H%M%S)"
-      dest="${backupRoot}/$timestamp"
-
-      running=false
-      if tmux -S "${sock}" has-session 2>/dev/null; then
-        running=true
-        session="$(tmux -S "${sock}" list-sessions -F '#{session_name}' | head -n1)"
-        echo "Server is running - flushing world to disk before copying"
-        tmux -S "${sock}" send-keys -t "$session" "save-off" Enter
-        tmux -S "${sock}" send-keys -t "$session" "save-all flush" Enter
-        # Give the flush a moment to actually finish writing before we
-        # start copying files out from under it.
-        sleep 10
-      else
-        echo "Server isn't running - copying world files as-is"
+      if ! mountpoint -q ${lib.escapeShellArg backupDataset}; then
+        echo "ERROR: ${backupDataset} is not mounted; refusing to write backups to the root filesystem." >&2
+        exit 1
       fi
-
-      mkdir -p "$dest"
-      rsync -a \
-        --exclude 'libraries' \
-        --exclude 'cache' \
-        --exclude 'logs' \
-        --exclude 'crash-reports' \
-        --exclude '*.jar' \
-        "${serverDataDir}/" "$dest/"
-
-      if [ "$running" = true ]; then
-        tmux -S "${sock}" send-keys -t "$session" "save-on" Enter
-      fi
-
-      echo "Backup written to $dest"
-
-      # Prune down to the newest ${toString keepBackups} backups.
-      # Timestamped names sort correctly as plain strings (ISO-like
-      # ordering), so a reverse sort of directory names is enough -
-      # no need to touch mtimes.
-      mapfile -t backups < <(find "${backupRoot}" -mindepth 1 -maxdepth 1 -type d -printf '%f\n' | sort -r)
-      if (( ''${#backups[@]} > ${toString keepBackups} )); then
-        for old in "''${backups[@]:${toString keepBackups}}"; do
-          echo "Pruning old backup: $old"
-          rm -rf -- "${backupRoot}/$old"
-        done
-      fi
+      install -d -m 0750 -o gemini -g users ${lib.escapeShellArg backupRoot}
     '';
   };
 in {
   systemd.services."minecraft-backup-${serverName}" = {
     description = "Back up Minecraft server ${serverName}";
+    # ZFS datasets are mounted by zfs-mount.service, not by systemd mount
+    # units, so RequiresMountsFor cannot express this; the ExecStartPre
+    # check below is the real guard.
+    after = ["zfs-mount.service"];
+    environment = {
+      BACKUP_ROOT = backupRoot;
+      SERVER_DATA_DIR = serverDataDir;
+      SOCK = sock;
+      KEEP_BACKUPS = toString keepBackups;
+    };
     serviceConfig = {
       Type = "oneshot";
       User = "gemini";
       Group = "users";
+      # The "+" prefix runs the preparation step as root.
+      ExecStartPre = "+${lib.getExe prepareBackupDir}";
       ExecStart = "${lib.getExe backupScript}";
     };
   };
 
   systemd.timers."minecraft-backup-${serverName}" = {
     description = "Weekly backup timer for ${serverName}";
-    wantedBy = [ "timers.target" ];
+    wantedBy = ["timers.target"];
     timerConfig = {
       OnCalendar = "Sun *-*-* 04:00:00";
       # Runs the backup on next boot if mercury happened to be off
@@ -88,20 +89,4 @@ in {
       RandomizedDelaySec = "30m";
     };
   };
-
-  # dataDir root itself isn't managed by nix-minecraft (that module
-  # only owns ${dataDir}/<servername>, same gap we hit with
-  # /srv/minecraft-servers earlier) - own and create it here so
-  # gemini (running the backup service) can write into it without
-  # sudo. "d" both creates it if missing and fixes ownership/mode if
-  # it already exists.
-  systemd.tmpfiles.rules = [
-    "d ${backupRoot} 0750 gemini users - -"
-  ];
-
-  # Same ordering requirement as the other datasets: tmpfiles runs
-  # before ZFS mounts the pool unless told otherwise. The ordering
-  # fix itself already lives in samba-shares.nix and applies globally
-  # (systemd.services.systemd-tmpfiles-setup.after/wants merge across
-  # files), so no need to repeat it here.
 }

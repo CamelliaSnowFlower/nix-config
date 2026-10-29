@@ -16,17 +16,6 @@
     ./sticker-notification.nix
   ];
 
-  nixpkgs = {
-    overlays = [
-      outputs.overlays.additions
-      outputs.overlays.modifications
-      outputs.overlays.unstable-packages
-    ];
-    config = {
-      allowUnfree = true;
-    };
-  };
-
   home = {
     username = "aquarius";
     homeDirectory = "/home/aquarius";
@@ -46,12 +35,6 @@
   xsession.windowManager.bspwm.startupPrograms = [
     "obsidian"
     "spotify"
-  ];
-
-  # Personal Spotify remote-control aliases with pokemonsay
-  # integration. Just mine, not a generic "desktop" persona thing, so
-  # kept here rather than in ../optional/desktop.nix.
-  home.packages = with pkgs; [
   ];
 
   # Enable home-manager

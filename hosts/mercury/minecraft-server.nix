@@ -4,7 +4,11 @@
 # The module/overlay itself are wired up at the flake level (see
 # flake.nix's mercury nixosSystem) since they need to attach before
 # this file's pkgs.minecraftServers reference resolves.
-{ config, pkgs, ... }: {
+{
+  config,
+  pkgs,
+  ...
+}: {
   services.minecraft-servers = {
     enable = true;
 
@@ -86,6 +90,5 @@
   # each server's console inside a session) - it doesn't put the
   # binary on anyone's interactive PATH. Needed so you can actually
   # attach: `tmux -S /run/minecraft/sticker-shop.sock attach`.
-  environment.systemPackages = [ pkgs.tmux ];
+  environment.systemPackages = [pkgs.tmux];
 }
-

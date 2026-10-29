@@ -1,6 +1,7 @@
+# The profiles.* options these modules read are declared in ../options.nix,
+# which ../common imports. Import both ../common and ../optional.
 {...}: {
   imports = [
-    ../options.nix
     ./desktop.nix
     ./unstable.nix
   ];

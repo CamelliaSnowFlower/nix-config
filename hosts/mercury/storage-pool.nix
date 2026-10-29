@@ -1,5 +1,4 @@
-{ pkgs, ... }: {
-
+{pkgs, ...}: {
   disko.devices = {
     disk = {
       storage1 = {
@@ -70,4 +69,3 @@
     };
   };
 }
-

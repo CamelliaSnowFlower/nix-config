@@ -33,8 +33,18 @@
   fileSystems."/var/lib/ollama-models" = {
     device = "/home/aquarius/Media/SOLID/ollama-models";
     fsType = "none";
-    options = ["bind" "nofail"];
+    options = [
+      "bind"
+      "nofail"
+      # Make sure the SSD itself is mounted before the bind mount is attempted.
+      "x-systemd.requires-mounts-for=/home/aquarius/Media/SOLID"
+    ];
   };
+
+  # Ollama must only run on top of the real bind mount. If the SSD or the bind
+  # mount is missing, the service fails visibly instead of quietly downloading
+  # models onto the root filesystem.
+  systemd.services.ollama.unitConfig.RequiresMountsFor = "/var/lib/ollama-models";
 
   systemd.tmpfiles.rules = [
     "d /home/aquarius/Media/SOLID/ollama-models 0755 ollama ollama -"

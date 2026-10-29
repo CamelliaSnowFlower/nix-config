@@ -5,10 +5,9 @@
   outputs,
   ...
 }: {
-  # Without this, custom packages from ../pkgs (like deepnest) are only
-  # visible to home-manager, not to environment.systemPackages here -
-  # home-manager/aquarius/default.nix applies these same overlays on
-  # its own, but the NixOS system-level pkgs needs them applied too.
+  # The overlays (including any custom packages added under ../pkgs) must be
+  # applied here too: home-manager/common/nixpkgs.nix applies them for
+  # home-manager, but the NixOS system-level pkgs is separate.
   nixpkgs.overlays = [
     outputs.overlays.additions
     outputs.overlays.modifications

@@ -1,0 +1,48 @@
+{
+  "name": "Sticker error notify",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "37734cc1-b0bf-5d0d-9756-aedba41de0bd",
+      "name": "Error Trigger",
+      "type": "n8n-nodes-base.errorTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "command": "=sticker-tool record-error --exec-id {{ $json.execution.id }} --node \"{{ $json.execution.lastNodeExecuted }}\""
+      },
+      "id": "fb68642c-ef5c-526b-a6bd-d61cb444fa8b",
+      "name": "Record failure",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        240,
+        0
+      ],
+      "executeOnce": true
+    }
+  ],
+  "connections": {
+    "Error Trigger": {
+      "main": [
+        [
+          {
+            "node": "Record failure",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {}
+}
