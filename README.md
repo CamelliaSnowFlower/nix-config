@@ -67,7 +67,7 @@ flowchart TB
 | **Uranus** | Desktop, local AI, automation | `aquarius@uranus` |
 | **Mercury** | Headless storage and application server | `gemini@mercury` |
 
-Aquarius administers Saturn and Uranus. Gemini administers Mercury. Mercury also has Samba-oriented accounts for file access; service accounts such as `rclone-sync` are not interactive user profiles.
+Aquarius administers Saturn and Uranus. Gemini administers Mercury. Mercury also has Samba-oriented accounts for file access: `aquarius`/`gubby` (admins) and per-artist accounts in the `artists` group, scoped to the `Shop-Inbox` drop-off share only.
 
 ## Services and data flow
 
@@ -79,20 +79,18 @@ flowchart TB
     Assets["Mercury · asset shares<br/>Shop-Assets / Shop-Designs / others"] -->|"mounted read access"| N8N
     N8N --> Process["Planned sticker processor<br/>scripts/workflow not yet committed"]
     Process --> Outbox["Mercury · Shop-Outbox<br/>ABC000/ and .staging/"]
-    Outbox --> Timer["Hourly sync timer"]
-    Timer --> Rclone["rclone outbox sync"]
-    Rclone --> Drive["Google Drive · Outbox"]
+    Outbox --> Pull["Admin pull<br/>LAN or Tailscale"]
     Mounts -.-> Notify["GNOME notification<br/>n8n remains stopped"]
 
     classDef profile fill:#172338,stroke:#6098d8,color:#d3e5ff,stroke-width:1.5px;
     classDef service fill:#291b32,stroke:#b28bd0,color:#f0d7ff,stroke-width:1.5px;
     classDef data fill:#14272b,stroke:#4eabb4,color:#c7f1f3,stroke-width:1.5px;
     class Operator,Tailnet,Notify profile;
-    class N8N,Mounts,Process,Timer,Rclone service;
-    class Assets,Outbox,Drive data;
+    class N8N,Mounts,Process,Pull service;
+    class Assets,Outbox data;
 ```
 
-- **Sticker paths:** assets are mounted under `/srv/sticker-automation/assets/`; finished files and staging live in Mercury's `Shop-Outbox` share. `.staging/` is excluded from Google Drive sync.
+- **Sticker paths:** assets are mounted under `/srv/sticker-automation/assets/`; finished files and staging live in Mercury's `Shop-Outbox` share, which admins pull from directly over the LAN or Tailscale (no external mirror).
 - **Startup dependency:** if any required SMB share fails to mount, n8n does not start; a retry timer attempts recovery and desktop notifications report mount failures.
 - **Implementation status:** the sticker-processing scripts and exported n8n workflow are not yet present in this repository; the process node above shows the intended flow, not a completed end-to-end pipeline.
 - **Manual production step:** inspect the sheet preview, then print and cut in Cricut Design Space.

@@ -98,9 +98,25 @@
           };
         };
 
-        # 7. Outbox: files staged for sharing outside the network via
-        # the rclone -> Google Drive sync (not exposed over Samba).
-        # Disposable copy - the originals live in the shop-* datasets.
+        # 7. Shop Inbox: art dropped off by external artists over
+        # Tailscale (see tailscale.nix, samba-shares.nix). Untrusted
+        # external write target - kept separate from the outbox below,
+        # which is the opposite direction (business -> external).
+        "storage/shop-inbox" = {
+          properties = {
+            mountpoint = "/mnt/storage/shop-inbox";
+            # Mixed art files, same reasoning as shop-assets.
+            compression = "zstd";
+            recordsize = "1M";
+            "com.sun:auto-snapshot" = "true";
+          };
+        };
+
+        # 8. Outbox: finished-goods production output, exposed as the
+        # Shop-Outbox Samba share (samba-shares.nix) for admin pull over
+        # the LAN or Tailscale. Used to also mirror one-way to Google
+        # Drive via rclone; that sync was removed. Disposable copy - the
+        # originals live in the shop-* datasets.
         "storage/outbox" = {
           properties = {
             mountpoint = "/mnt/storage/outbox";

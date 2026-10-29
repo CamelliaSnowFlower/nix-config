@@ -18,10 +18,11 @@
     ./storage-pool.nix
     ./disko-zfs.nix
     ./sanoid.nix
+    ./storage-permissions.nix
     ./samba-shares.nix
     ./minecraft-server.nix
     ./minecraft-backup.nix
-    ./outbox-sync.nix
+    ./tailscale.nix
   ];
 
   networking.hostName = "mercury"; # Define your hostname.
@@ -33,7 +34,7 @@
   networking.hostId = "6d778fb4";
   # allow zfs to handle importing?
   systemd.services.zfs-mount.enable = true;
-  boot.zfs.extraPools = [ "storage" ];
+  boot.zfs.extraPools = ["storage"];
   # Only root import is a data-loss risk; root's on plain ext4 here.
   boot.zfs.forceImportRoot = false;
   # This is what caused the boot failure: the running kernel had no
@@ -43,7 +44,6 @@
   # nixpkgs revision actually supports fixes it now and keeps it from
   # recurring as nixpkgs updates over time.
   boot.kernelPackages = pkgs.linuxPackages;
- 
 
   # aquarius's key from uranus - lets you SSH in from uranus without a
   # password, and means root access survives a reinstall without
@@ -77,6 +77,20 @@
     isNormalUser = true;
     description = "Gubby";
     extraGroups = ["users"];
+  };
+
+  # Samba-access-only accounts for external artists dropping files into
+  # Shop-Inbox over Tailscale (see tailscale.nix and samba-shares.nix).
+  # Deliberately in "artists", not "users" - so they get no access to
+  # Shop-Designs/Assets/3DModels/Videos/Accounting even if "valid
+  # users" on those shares is ever loosened. "artist-example" is a
+  # placeholder: rename it (or add more blocks) per real artist, then
+  # set each one's Samba password with `sudo smbpasswd -a <name>`.
+  users.groups.artists = {};
+  users.users.artist-example = {
+    isNormalUser = true;
+    description = "Example artist - replace with a real account";
+    extraGroups = ["artists"];
   };
 
   # Headless server - manage this over SSH.

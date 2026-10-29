@@ -8,7 +8,7 @@ This list is ordered by operational risk and depends on the static review in `CO
 - [ ] **Human:** Confirm the existing ZFS pool and dataset state with `zpool status storage` and `zfs list -o name,mountpoint,canmount,compression,recordsize`. Do not re-create the pool or run destructive disko commands as part of ordinary rebuilds.
 - [ ] **AI + Human:** On a Nix-capable machine, evaluate all three NixOS hosts and both Home Manager outputs. Resolve every evaluation error before switching any host.
 - [ ] **Human:** Decide whether Mercury should allow SSH directly to root. If not essential, remove the root authorized key and use `gemini` plus `sudo`.
-- [ ] **Human:** Test Google Drive sync with a dry run/test remote and disposable files before the first real `rclone sync` against `gdrive:Outbox`.
+- [ ] **Human:** Run `sudo tailscale up` on mercury to join the tailnet, then set up each real artist account (replace the `artist-example` placeholder in `hosts/mercury/configuration.nix`, run `smbpasswd -a <name>`) and write the Tailscale ACL restricting artist devices to mercury:445 only. See `hosts/mercury/tailscale.nix`.
 
 ## P1 — Correctness and reliability
 
@@ -19,7 +19,6 @@ This list is ordered by operational risk and depends on the static review in `CO
 - [ ] **AI:** Add concurrency/idempotency guarantees to listing-number reservation. A SQLite transaction plus a unique constraint should be the single allocator; filename scanning is only a bootstrap/reconciliation input.
 - [ ] **AI:** Rework the SMB retry logic so every scheduled health check verifies current mounts and bounded share access even after the original oneshot unit has succeeded. On required-share failure, update status and block/stop automation.
 - [ ] **AI + Human:** Confirm `pkgs.minecraftServers.vanilla-26_2` exists at the locked nix-minecraft revision and evaluate the Mercury toplevel.
-- [ ] **AI:** Add a safe sync preview command and update the outbox documentation so the first-time test is genuinely non-destructive.
 
 ## P2 — Service boundaries and filesystem correctness
 
@@ -31,13 +30,14 @@ This list is ordered by operational risk and depends on the static review in `CO
 - [ ] **AI:** Consolidate ZFS mount-dependent tmpfiles/permission handling and ensure a missing pool cannot cause permission changes to bare mountpoint directories.
 - [ ] **Human + AI:** Decide whether all six SMB shares really must be mandatory for n8n, including host-only `Shop-Accounting`, `Shop-3DModels`, and `Shop-Videos`. Keep all-share checks if that is an explicit policy; otherwise define critical and optional share sets.
 - [ ] **AI:** Document and enforce the trust boundary for n8n Execute Command: restrict editors, keep the UI tailnet-only, keep shell wrappers fixed, and evaluate a separate processing worker.
-- [ ] **Human:** Verify that SMB credentials, n8n environment files, rclone credentials, and the n8n encryption key exist with the intended ownership/mode on the correct host. Never commit them.
+- [ ] **Human:** Verify that SMB credentials, n8n environment files, and the n8n encryption key exist with the intended ownership/mode on the correct host. Never commit them.
+- [ ] **Human + AI:** Design per-artist sharing within `Shop-Assets`, now that the Google Drive mirror is gone - each artist/collaborator gets access scoped to their own subdirectory, not the whole share. Decide the mechanism (per-artist Samba accounts + per-directory `valid users`/path like the `Shop-Inbox` pattern, vs. something else) and how directories map to artists before implementing - this is additional access to an existing business share, so needs an explicit decision, not an assumption.
 
 ## P3 — Consolidation and maintainability
 
 - [ ] **AI:** Consolidate repeated Home Manager option imports and duplicated `nixpkgs.overlays` / `allowUnfree` declarations where it reduces real maintenance without creating implicit magic.
 - [ ] **AI:** Create a small account/profile matrix for host accounts, groups, SSH policy, Home Manager output, and enabled profiles. Preserve host-specific privileges explicitly.
-- [ ] **AI:** Correct stale comments and setup-guide artifacts, including the literal `\n` in the SMB share list, the outdated VM placeholder note, and the contradictory outbox “not exposed over Samba” comment.
+- [ ] **AI:** Correct stale comments and setup-guide artifacts, including the literal `\n` in the SMB share list and the outdated VM placeholder note.
 - [ ] **AI:** Decide whether a reusable module should own each domain (storage, shares, backups, containers) or whether small host-specific modules should remain separate. Avoid one monolithic module.
 - [ ] **AI:** Add formatting/static checks and non-destructive CI. Do not run deploy, format disks, import pools, mutate remote Drive data, or restart production services in CI.
 - [ ] **AI:** Make the Home Manager target system explicit if non-x86_64 configurations are planned; current `mkHome` is hardcoded to `x86_64-linux`.
@@ -50,5 +50,5 @@ This list is ordered by operational risk and depends on the static review in `CO
 - [ ] Evaluate Home Manager activation packages for `aquarius@uranus`, `aquarius@saturn`, and `gemini@mercury`.
 - [ ] Evaluate the Minecraft package attribute at the locked input revision.
 - [ ] Run `nix fmt`, inspect the diff, and check for accidental unrelated changes.
-- [ ] Test SMB mount fail/recovery behavior, the n8n startup gate, GNOME failure notification, Google Drive dry-run/delete guard, Minecraft backup failure cleanup, and a complete sticker job with disposable test data.
+- [ ] Test SMB mount fail/recovery behavior, the n8n startup gate, GNOME failure notification, Minecraft backup failure cleanup, and a complete sticker job with disposable test data.
 - [ ] Only after successful staging tests, deploy one host at a time and retain a rollback generation.
