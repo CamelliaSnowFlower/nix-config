@@ -1,6 +1,7 @@
 {...}: {
   imports = [
     ../options.nix
+    ./nixpkgs.nix
     ./photography.nix
     ./coding.nix
     ./sysadmin.nix

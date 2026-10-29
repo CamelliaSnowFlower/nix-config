@@ -1,0 +1,559 @@
+{
+  "name": "Sticker intake and sheet generation",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## Sticker intake and sheet generation\\n\\nImported from sticker/n8n/ in the nix-config repo. This file was generated without access to an n8n instance: after importing, open each node and confirm its settings, then run a test submission with disposable art.\\n\\nAll processing is done by the `sticker-tool` command. Customer text is never placed in a command line.\\n\\nSet this workflow's Error Workflow (Settings) to 'Sticker error notify'.",
+        "height": 300,
+        "width": 460
+      },
+      "id": "067519ea-7e95-5f6c-8403-e43faed98f17",
+      "name": "Read me",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -60,
+        -340
+      ]
+    },
+    {
+      "parameters": {
+        "formTitle": "New sticker listing",
+        "formDescription": "Upload the artwork for ONE new listing. Each file becomes one variation (V001, V002, ...) of the next listing number.",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "Sticker files",
+              "fieldType": "file",
+              "multipleFiles": true,
+              "acceptFileTypes": ".png,.jpg,.jpeg",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Sticker size (inches, longest side)",
+              "fieldType": "number",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Sheet types",
+              "fieldType": "checkbox",
+              "fieldOptions": {
+                "values": [
+                  {
+                    "option": "letter"
+                  },
+                  {
+                    "option": "tabloid"
+                  }
+                ]
+              },
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Quantity (optional)",
+              "fieldType": "number"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "57c5125d-d16a-5c97-8761-649f263aedae",
+      "name": "Sticker intake form",
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "webhookId": "ef039801-b8b9-5e80-b740-4be3f75daf41"
+    },
+    {
+      "parameters": {
+        "command": "=sticker-tool mkincoming --exec-id {{ $execution.id }}"
+      },
+      "id": "9d51efac-ac73-5f6e-8db2-07d598b2b3ba",
+      "name": "Make incoming folder",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        240,
+        0
+      ],
+      "executeOnce": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const form = $('Sticker intake form').first();\nconst allowed = { 'image/png': 'png', 'image/jpeg': 'jpg' };\nconst files = [];\nconst out = [];\n\n// One item per accepted upload. Only the extension is taken from the MIME\n// type (allow-list); the stored name is always a server-made 001.png style\n// name. Original names travel in request.json as data, never in a command.\nfor (const [, binary] of Object.entries(form.binary || {})) {\n  const extension = allowed[binary.mimeType];\n  if (!extension) continue;\n  const name = String(files.length + 1).padStart(3, '0') + '.' + extension;\n  files.push({ file: name, original_name: String(binary.fileName || '') });\n  out.push({ json: { targetName: name }, binary: { data: binary } });\n}\n\nconst quantity = form.json['Quantity (optional)'];\nconst request = {\n  size_in: Number(form.json['Sticker size (inches, longest side)']),\n  sheets: [].concat(form.json['Sheet types'] || []),\n  quantity: (quantity === undefined || quantity === null || quantity === '') ? null : Number(quantity),\n  files,\n};\n\nconst requestFile = await this.helpers.prepareBinaryData(\n  Buffer.from(JSON.stringify(request)), 'request.json', 'application/json');\nout.push({ json: { targetName: 'request.json' }, binary: { data: requestFile } });\nreturn out;"
+      },
+      "id": "0a71e323-a6fd-5b37-824a-1835bd49d0aa",
+      "name": "Prepare files",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        480,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "write",
+        "fileName": "=/data/state/incoming/{{ $execution.id }}/{{ $json.targetName }}",
+        "dataPropertyName": "data",
+        "options": {}
+      },
+      "id": "c486942e-75d8-51da-8914-35aa5eee6369",
+      "name": "Save uploads",
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "position": [
+        720,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "command": "=sticker-tool intake --exec-id {{ $execution.id }}"
+      },
+      "id": "f0787abf-c515-579a-a68c-e7eae03f4e24",
+      "name": "Reserve and stage",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        960,
+        0
+      ],
+      "executeOnce": true
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{ json: JSON.parse($input.first().json.stdout) }];"
+      },
+      "id": "80d7afeb-cc89-5d32-b12e-ef9d6ab0b213",
+      "name": "Parse intake",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1200,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "command": "=sticker-tool process --job {{ $json.job_id }}"
+      },
+      "id": "c4c6a702-b7fb-5d34-a649-4b49250bae01",
+      "name": "Process stickers",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        1440,
+        0
+      ],
+      "executeOnce": true
+    },
+    {
+      "parameters": {
+        "jsCode": "// First pass has no Decision, so the default profile is used. The re-run\n// choices from the approval form map to fixed profile names in sticker-tool.\nconst decision = $input.first().json.Decision;\nconst profiles = {\n  'Re-run with a wider gap': 'wide-gap',\n  'Re-run with more rotations': 'more-rotations',\n};\nreturn [{ json: {\n  job_id: $('Parse intake').first().json.job_id,\n  profile: profiles[decision] || 'default',\n} }];"
+      },
+      "id": "a4fa68e2-728a-57a9-a583-f00d6775d1f8",
+      "name": "Choose profile",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1680,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "command": "=sticker-tool nest --job {{ $json.job_id }} --profile {{ $json.profile }}"
+      },
+      "id": "75565d6d-323c-51ec-a70b-027d7ab9f619",
+      "name": "Nest sheets",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        1920,
+        0
+      ],
+      "executeOnce": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const result = JSON.parse($input.first().json.stdout);\nconst lines = result.sheets.map((s) =>\n  `${s.sku} ${s.sheet}: ${s.copies} copies, ${s.fill_percent}% filled` +\n  (s.sheets_needed ? `, ${s.sheets_needed} sheet(s) for the order` : ''));\nreturn [{ json: {\n  job_id: result.job_id,\n  profile: result.profile,\n  summary_text: lines.join('\\n'),\n} }];"
+      },
+      "id": "fe64f61e-c57c-5d17-b18b-79db96d49f0e",
+      "name": "Summarize layout",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2160,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "command": "=sticker-tool note-approval --job {{ $json.job_id }} --url \"{{ $execution.resumeFormUrl }}\""
+      },
+      "id": "882eea5d-a743-5dff-b624-50a2ad585309",
+      "name": "Save approval link",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        2400,
+        0
+      ],
+      "executeOnce": true
+    },
+    {
+      "parameters": {
+        "resume": "form",
+        "formTitle": "Approve sticker sheets",
+        "formDescription": "=Job {{ $('Summarize layout').first().json.job_id }} (profile: {{ $('Summarize layout').first().json.profile }})\\n\\nOpen the preview images in Shop-Outbox/.staging/{{ $('Summarize layout').first().json.job_id }} to review the layout.\\n\\n{{ $('Summarize layout').first().json.summary_text }}",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "Decision",
+              "fieldType": "dropdown",
+              "fieldOptions": {
+                "values": [
+                  {
+                    "option": "Approve and publish"
+                  },
+                  {
+                    "option": "Re-run with a wider gap"
+                  },
+                  {
+                    "option": "Re-run with more rotations"
+                  },
+                  {
+                    "option": "Reject and discard"
+                  }
+                ]
+              },
+              "requiredField": true
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "7e247d20-8100-5e6a-8d28-6456b7510734",
+      "name": "Wait for approval",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        2640,
+        0
+      ],
+      "webhookId": "720168b3-7dbe-5180-b12d-f6df01986504"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict"
+                },
+                "conditions": [
+                  {
+                    "id": "db0d3dea-e3a7-5395-bbe9-8b4167fb8e43",
+                    "leftValue": "={{ $json.Decision }}",
+                    "rightValue": "Approve and publish",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Approve"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict"
+                },
+                "conditions": [
+                  {
+                    "id": "cc209588-4a19-59d1-b593-31857862f470",
+                    "leftValue": "={{ $json.Decision }}",
+                    "rightValue": "Re-run with a wider gap",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Wider gap"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict"
+                },
+                "conditions": [
+                  {
+                    "id": "f457eae0-654a-5edd-869e-7bf64574fe4a",
+                    "leftValue": "={{ $json.Decision }}",
+                    "rightValue": "Re-run with more rotations",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "More rotations"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict"
+                },
+                "conditions": [
+                  {
+                    "id": "28aa7ec1-6036-5b98-8e69-0becae353a72",
+                    "leftValue": "={{ $json.Decision }}",
+                    "rightValue": "Reject and discard",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Reject"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "b10ff40a-175f-5296-9e45-0044cfb2b1d8",
+      "name": "Decision",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3,
+      "position": [
+        2880,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "command": "=sticker-tool commit --job {{ $('Parse intake').first().json.job_id }}"
+      },
+      "id": "d64cff1e-5dfb-5f5d-ab82-77ed1d2930d1",
+      "name": "Commit job",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        3120,
+        -140
+      ],
+      "executeOnce": true
+    },
+    {
+      "parameters": {
+        "command": "=sticker-tool reject --job {{ $('Parse intake').first().json.job_id }}"
+      },
+      "id": "ae34e9fd-c7f9-5f48-b378-6ea74f601046",
+      "name": "Reject job",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        3120,
+        220
+      ],
+      "executeOnce": true
+    }
+  ],
+  "connections": {
+    "Sticker intake form": {
+      "main": [
+        [
+          {
+            "node": "Make incoming folder",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Make incoming folder": {
+      "main": [
+        [
+          {
+            "node": "Prepare files",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare files": {
+      "main": [
+        [
+          {
+            "node": "Save uploads",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save uploads": {
+      "main": [
+        [
+          {
+            "node": "Reserve and stage",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reserve and stage": {
+      "main": [
+        [
+          {
+            "node": "Parse intake",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse intake": {
+      "main": [
+        [
+          {
+            "node": "Process stickers",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Process stickers": {
+      "main": [
+        [
+          {
+            "node": "Choose profile",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Choose profile": {
+      "main": [
+        [
+          {
+            "node": "Nest sheets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Nest sheets": {
+      "main": [
+        [
+          {
+            "node": "Summarize layout",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Summarize layout": {
+      "main": [
+        [
+          {
+            "node": "Save approval link",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save approval link": {
+      "main": [
+        [
+          {
+            "node": "Wait for approval",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait for approval": {
+      "main": [
+        [
+          {
+            "node": "Decision",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Decision": {
+      "main": [
+        [
+          {
+            "node": "Commit job",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Choose profile",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Choose profile",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Reject job",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {}
+}

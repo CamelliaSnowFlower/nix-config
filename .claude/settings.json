@@ -1,0 +1,34 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(./dev.sh)",
+      "Bash(./dev.sh check)",
+      "Bash(./dev.sh build:*)",
+      "Bash(./dev.sh vm:*)",
+      "Bash(scripts/check.sh)",
+      "Bash(nix flake check:*)",
+      "Bash(nix fmt:*)",
+      "Bash(nix eval:*)",
+      "Bash(nixos-rebuild build:*)",
+      "Bash(nixos-rebuild build-vm:*)",
+      "Bash(nvd diff:*)",
+      "Bash(alejandra:*)",
+      "Bash(statix:*)",
+      "Bash(deadnix:*)",
+      "Bash(python3 -m unittest:*)",
+      "Bash(git status:*)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)"
+    ],
+    "deny": [
+      "Bash(sudo:*)",
+      "Bash(nixos-rebuild switch:*)",
+      "Bash(nixos-rebuild test:*)",
+      "Bash(nixos-rebuild boot:*)",
+      "Bash(nixos-anywhere:*)",
+      "Bash(disko:*)",
+      "Bash(zpool:*)",
+      "Bash(rclone:*)"
+    ]
+  }
+}

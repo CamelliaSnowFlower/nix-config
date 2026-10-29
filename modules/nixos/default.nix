@@ -4,4 +4,5 @@
   # List your module files here
   # my-module = import ./my-module.nix;
   odysseus = import ./odysseus.nix;
+  claude-code = import ./claude-code.nix;
 }

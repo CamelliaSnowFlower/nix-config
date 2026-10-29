@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(mkdir -p /tmp/nix-shell.mQzdfE/claude-1000/-home-aquarius-Documents-nix-config-dev-nix-config/a5ee7136-4f26-4520-b08b-6cfa77700e73/scratchpad)",
+      "Bash(echo \"EXIT=$?\")"
+    ]
+  }
+}

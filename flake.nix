@@ -102,6 +102,11 @@
     # Formatter for your nix files, available through 'nix fmt'
     # Other options beside 'alejandra' include 'nixpkgs-fmt'
     formatter = forAllSystems (system: nixpkgs.legacyPackages.${system}.alejandra);
+    # Development shell for working on this repo: 'nix develop' (or direnv).
+    # x86_64-linux only, since every host here is x86_64-linux.
+    devShells.x86_64-linux.default = import ./devshell.nix {
+      pkgs = nixpkgs.legacyPackages.x86_64-linux;
+    };
 
     # Your custom packages and modifications, exported as overlays
     overlays = import ./overlays {inherit inputs;};
